@@ -1,13 +1,14 @@
 import { Request, Response } from 'express'
 import { orm } from '../shared/db/orm.js'
-import { Especialidad } from './especialidad.entity.js'
+import { ObraSocial } from './obrasocial.entity.js'
+
 
 const em = orm.em
 
 async function findAll(req: Request,res: Response) {
     try{
-        const especialidades = await em.find(Especialidad, {})
-        res.status(200).json({message: 'ok', data: especialidades})
+        const obrasSociales = await em.find(ObraSocial, {})
+        res.status(200).json({message: 'ok', data: obrasSociales})
     } catch (error:any) {
         res.status(500).json({ message: error.message })
     }
@@ -16,9 +17,9 @@ async function findAll(req: Request,res: Response) {
 async function add(req: Request, res: Response) {
     
     try {
-        const especialidad = em.create(Especialidad, req.body)
+        const obraSocial = em.create(ObraSocial, req.body)
         await em.flush()
-        res.status(201).json({message: 'ok', data: especialidad})
+        res.status(201).json({message: 'ok', data: obraSocial})
     }   catch (error:any) {
         res.status(500).json({ message: error.message })
     }

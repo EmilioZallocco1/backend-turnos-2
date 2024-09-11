@@ -1,6 +1,5 @@
 import {Entity,PrimaryKey,Property,OneToMany,Collection,ManyToOne, Rel} from '@mikro-orm/core';
 import { Especialidad } from '../especialidad/especialidad.entity.js';
-//import { ObraSocial } from '../obraSocial/obraSocial.entity.js';
 import { Turno } from '../turno/turno.entity.js';
 import { ObraSocial } from '../obraSocial/obrasocial.entity.js';
 //import { Horario } from './Horario'; // Importa la entidad Horario

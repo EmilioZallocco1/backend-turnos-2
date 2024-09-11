@@ -1,10 +1,10 @@
-// import { Router } from "express";
-// import { findAll, findOne, add, update, remove } from ""
+ import { Router } from "express";
+ import { findAll, findOne, add, update, remove } from "./especialidad.controler.js";
+ 
+ export const especialidadRouter = Router();
 
-// export const especialidadRouter = Router();
-
-// especialidadRouter.get("/", findAll);
-// especialidadRouter.get("/:id", findOne);
-// especialidadRouter.post("/", add);
-// especialidadRouter.put("/:id", update);
-// especialidadRouter.delete("/:id", remove);
+ especialidadRouter.get("/", findAll);
+ especialidadRouter.get("/:id", findOne);
+ especialidadRouter.post("/", add);
+ especialidadRouter.put("/:id", update);
+ especialidadRouter.delete("/:id", remove);
