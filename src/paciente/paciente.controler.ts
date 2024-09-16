@@ -1,11 +1,11 @@
 import { Request, Response } from 'express'
 import { orm } from '../shared/db/orm.js'
-import { Paciente } from './paciente.entity'
+import { Paciente } from './paciente.entity.js'
 
 const em = orm.em
 async function findAll(req: Request, res: Response) {
     try{
-        const pacientes = await em.find(Paciente, {})
+        const pacientes = await em.find(Paciente, {},{ populate: ['obraSocial'] })
         res.status(200).json({message: 'ok', data: pacientes})
     } catch (error:any) {
         res.status(500).json({ message: error.message }) 
