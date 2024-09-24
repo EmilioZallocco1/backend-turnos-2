@@ -8,7 +8,10 @@ export class Especialidad {
     id!: number
 
     @Property()
-    nombre!: string
+    name!: string
+
+    @Property()
+    description!: string
 
     @OneToMany(()=> Medico, (medico) => medico.especialidad,{cascade: [Cascade.ALL],})
     medicos = new Collection<Medico>(this)

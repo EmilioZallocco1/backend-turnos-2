@@ -39,15 +39,28 @@ async function add(req: Request, res: Response) {
 }
 
 async function remove(req: Request, res: Response) {
-    res.status(500).json({ message: 'not implemented' })
-    
-}
+    try {
+      const id = Number.parseInt(req.params.id)
+      const medico = em.getReference(Medico, id)
+      await em.removeAndFlush(medico)
+    } catch (error: any) {
+      res.status(500).json({ message: error.message })
+    }
+  }
 
 async function update(req: Request, res: Response) {
-    res.status(500).json({ message: 'not implemented' })
-    
-}
-
+    try {
+      const id = Number.parseInt(req.params.id)
+      const medicoToUpdate = await em.findOneOrFail(Medico, { id })
+      em.assign(medicoToUpdate, req.body.sanitizedInput)
+      await em.flush()
+      res
+        .status(200)
+        .json({ message: 'medico updated', data: medicoToUpdate })
+    } catch (error: any) {
+      res.status(500).json({ message: error.message })
+    }
+  }
 
 
 

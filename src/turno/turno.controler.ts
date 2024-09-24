@@ -13,6 +13,19 @@ async function findAll(req: Request,res: Response) {
     }
 }
 
+
+async function findOne(req: Request, res: Response) {
+    try{
+        const id = Number.parseInt(req.params.id)
+        const medico = await em.findOneOrFail(Turno, { id },{ populate: ['medico','paciente'] })
+        res.status(200).json({message: 'ok', data: medico})
+
+    }catch (error:any) {
+        res.status(500).json({ message: error.message })
+    }
+    
+}
+
 async function add(req: Request, res: Response) {
     
     try {
@@ -25,20 +38,33 @@ async function add(req: Request, res: Response) {
     
 }
 
-async function remove(req: Request, res: Response) {
-    res.status(500).json({ message: 'not implemented' })
-    
-}
-
 async function update(req: Request, res: Response) {
-    res.status(500).json({ message: 'not implemented' })
-    
-}
+    try {
+      const id = Number.parseInt(req.params.id)
+      const turnoToUpdate = await em.findOneOrFail(Turno, { id })
+      em.assign(turnoToUpdate, req.body.sanitizedInput)
+      await em.flush()
+      res
+        .status(200)
+        .json({ message: 'turno updated', data: turnoToUpdate })
+    } catch (error: any) {
+      res.status(500).json({ message: error.message })
+    }
+  }
 
-async function findOne(req: Request, res: Response) {
-    res.status(500).json({ message: 'not implemented' })
-    
-}
+
+  async function remove(req: Request, res: Response) {
+    try {
+      const id = Number.parseInt(req.params.id)
+      const turno = em.getReference(Turno, id)
+      await em.removeAndFlush(turno)
+    } catch (error: any) {
+      res.status(500).json({ message: error.message })
+    }
+  }
+
+
+
 
 
 export { add, remove, update, findOne, findAll }

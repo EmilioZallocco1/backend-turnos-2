@@ -13,6 +13,16 @@ async function findAll(req: Request,res: Response) {
     }
 }
 
+async function findOne(req: Request, res: Response) {
+    try {
+      const id = Number.parseInt(req.params.id)
+      const item = await em.findOneOrFail(Especialidad, { id })
+      res.status(200).json({ message: 'found especialidad', data: item })
+    } catch (error: any) {
+      res.status(500).json({ message: error.message })
+    }
+  }
+
 async function add(req: Request, res: Response) {
     
     try {
@@ -25,20 +35,29 @@ async function add(req: Request, res: Response) {
     
 }
 
-async function remove(req: Request, res: Response) {
-    res.status(500).json({ message: 'not implemented' })
-    
-}
-
 async function update(req: Request, res: Response) {
-    res.status(500).json({ message: 'not implemented' })
-    
-}
+    try {
+      const id = Number.parseInt(req.params.id)
+      const especialidad = em.getReference(Especialidad, id)
+      em.assign(especialidad, req.body)
+      await em.flush()
+      res.status(200).json({ message: 'especialidad updated' })
+    } catch (error: any) {
+      res.status(500).json({ message: error.message })
+    }
+  }
 
-async function findOne(req: Request, res: Response) {
-    res.status(500).json({ message: 'not implemented' })
-    
-}
+
+async function remove(req: Request, res: Response) {
+    try {
+      const id = Number.parseInt(req.params.id)
+      const especialidad = em.getReference(Especialidad, id)
+      await em.removeAndFlush(especialidad)
+      res.status(200).send({ message: 'especialidad deleted' })
+    } catch (error: any) {
+      res.status(500).json({ message: error.message })
+    }
+  }
 
 
 export { add, remove, update, findOne, findAll }
