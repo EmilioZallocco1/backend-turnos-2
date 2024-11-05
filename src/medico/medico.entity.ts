@@ -21,8 +21,8 @@ export class Medico {
   @Property()
   telefono!: string;
 
-  @ManyToOne(()=> ObraSocial,{nullable:false})
-  obraSocial!: Rel<ObraSocial>
+  @ManyToOne(()=> ObraSocial,{nullable:true})
+  obraSocial?: Rel<ObraSocial>
 
   @OneToMany(() => Turno, (turno) => turno.medico)
   turnos = new Collection<Turno>(this);

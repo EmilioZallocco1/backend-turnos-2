@@ -11,16 +11,19 @@ export class Paciente {
   nombre!: string;
 
   @Property()
-  fechaNacimiento!: Date;
+  apellido!: string;
 
   @Property()
   email!: string;
 
   @Property()
-  telefono!: string;
+  passwordHash!: string; // Asegúrate de que esta propiedad esté definida
+  
+  @Property()
+  role: string = 'paciente'; // Rol por defecto, establecido como 'paciente'
 
   @ManyToOne(()=>ObraSocial,{nullable:false})
-  obraSocial!: Rel<ObraSocial>;
+  obraSocial?: Rel<ObraSocial>;
 
   @OneToMany(()=>Turno,turno=>turno.paciente,{cascade: [Cascade.ALL]})
   turnos = new Collection<Turno>(this);

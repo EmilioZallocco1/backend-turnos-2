@@ -1,5 +1,6 @@
 import 'reflect-metadata'
 import express from 'express'
+import cors from 'cors'
 // import { characterRouter } from './character/character.routes.js'
 // import { characterClassRouter } from './character/characterClass.routes.js'
 // import { itemRouter } from './character/item.routes.js'
@@ -13,8 +14,10 @@ import { obraSocialRouter} from './obraSocial/obraSocial.routes.js'
 
 
 
+
 const app = express()
 app.use(express.json())
+app.use(cors())
 
 //luego de los middlewares base
 app.use((req, res, next) => {
@@ -32,7 +35,7 @@ app.use('/api/especialidades/',especialidadRouter)
 app.use('/api/medicos/', medicoRouter)
 app.use('/api/turnos/', turnoRouter)
 app.use('/api/pacientes/', pacienteRouter)
-app.use('/api/obrasSociales/', obraSocialRouter)
+app.use('/api/obrasSocial/', obraSocialRouter)
 
 //===================================================================
 

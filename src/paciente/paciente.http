@@ -1,0 +1,54 @@
+### GET ALL
+GET http://localhost:3000/api/pacientes
+
+### POST
+# @name createPaciente
+POST http://localhost:3000/api/pacientes
+Content-Type: application/json
+
+{
+  "nombre": "juan",
+  "apellido":"ramos",
+  "email": "juna.rramos@example.com",
+  "passwordHash": "hashedpassword5",
+  "role": "paciente"
+}
+
+###ID
+@id = {{createPaciente.response.body.data.id}}
+
+### GET ONE
+GET http://localhost:3000/api/pacientes/{{id}}
+
+### PUT
+PUT http://localhost:3000/api/especialidades/{{id}}
+Content-Type: application/json
+
+{
+    "name": "Juan",
+    "description": "es es una prueba 2"
+}
+
+### POST 2
+POST http://localhost:3000/api/especialidades
+Content-Type: application/json
+
+{
+    "name": "pedro",
+    "description": "dale que vaaa"
+}
+
+### POST
+# @name createEspecialidadToDelete
+POST http://localhost:3000/api/items
+Content-Type: application/json
+
+{
+    "name": "Blaster",
+    "description": "A weapon for a less civilized age"
+}
+
+### DELETE
+@idToDelete = {{createEspecialidadToDelete.response.body.data.id}}
+
+DELETE http://localhost:3000/api/items/{{idToDelete}}
