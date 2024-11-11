@@ -5,7 +5,8 @@ import {
   update,
   remove,
   register,
-  login
+  login,
+  findTurnosByPacienteId
 } from '../paciente/paciente.controler.js'
 
 export const pacienteRouter = Router()
@@ -17,3 +18,4 @@ pacienteRouter.put('/:id', update)
 pacienteRouter.delete('/:id', remove)
 pacienteRouter.post('/register', register)
 pacienteRouter.post('/login', login)
+pacienteRouter.get('/:id/turnos', findTurnosByPacienteId)

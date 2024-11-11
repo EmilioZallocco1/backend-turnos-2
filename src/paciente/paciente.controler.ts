@@ -3,6 +3,7 @@ import { orm } from '../shared/db/orm.js'
 import { Paciente } from './paciente.entity.js'
 import bcrypt from 'bcrypt';
 import { ObraSocial } from '../obraSocial/obrasocial.entity.js';
+import { Turno } from '../turno/turno.entity.js';
 
 const em = orm.em.fork();
 
@@ -89,6 +90,10 @@ async function login(req: Request, res: Response) {
     console.error('Error en el proceso de login:', error.message); // Imprimir error en la consola
     res.status(500).json({ message: error.message });
   }
+
+
+
+
 }
 
 
@@ -142,12 +147,49 @@ async function update(req: Request, res: Response) {
 
   async function remove(req: Request, res: Response) {
     try {
-      const id = Number.parseInt(req.params.id)
-      const paciente = em.getReference(Paciente, id)
-      await em.removeAndFlush(paciente)
+      // Convertir el ID a número
+      const id = Number.parseInt(req.params.id);
+  
+      // Asegúrate de obtener al paciente completo desde la base de datos
+      const paciente = await em.findOne(Paciente, { id });
+  
+      if (!paciente) {
+        return res.status(404).json({ message: 'Paciente no encontrado' }); // Si el paciente no existe
+      }
+  
+      // Eliminar el paciente encontrado
+      await em.removeAndFlush(paciente);
+  
+      res.status(200).json({ message: 'Paciente eliminado con éxito' }); // Respuesta exitosa
     } catch (error: any) {
-      res.status(500).json({ message: error.message })
+      console.error('Error al eliminar el paciente:', error); // Log para depuración
+      res.status(500).json({ message: 'Error al eliminar el paciente', error: error.message }); // Respuesta de error
     }
   }
 
-export { login,register, remove, update, findOne, findAll }
+
+  // Nuevo método para obtener los turnos del paciente usando el id como parámetro
+  async function findTurnosByPacienteId(req: Request, res: Response,) {
+    try {
+      // Obtener el ID del paciente desde los parámetros de la URL
+      const pacienteId = Number.parseInt(req.params.id);
+  
+      if (isNaN(pacienteId)) {
+        return res.status(400).json({ message: 'ID de paciente inválido' });
+      }
+  
+      // Buscar los turnos del paciente usando su ID
+      const turnos = await em.find(Turno, { paciente: pacienteId }, { populate: ['paciente', 'medico'] });
+
+      if (turnos.length === 0) {
+        return res.status(404).json({ message: 'No se encontraron turnos para este paciente' });
+      }
+  
+      res.status(200).json({ message: 'Turnos obtenidos con éxito', data: turnos });
+    } catch (error: any) {
+      console.error(error);
+      res.status(500).json({ message: 'Error al obtener los turnos', error: error.message });
+    }
+  }
+
+export { login,register, remove, update, findOne, findAll, findTurnosByPacienteId }

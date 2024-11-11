@@ -1,6 +1,8 @@
 import { Request, Response } from 'express'
 import { orm } from '../shared/db/orm.js'
 import { Turno } from './turno.entity.js'
+import { Medico } from '../medico/medico.entity.js'
+import { Paciente } from '../paciente/paciente.entity.js'
 
 const em = orm.em
 
@@ -27,15 +29,39 @@ async function findOne(req: Request, res: Response) {
 }
 
 async function add(req: Request, res: Response) {
-    
-    try {
-        const turno = em.create(Turno, req.body)
-        await em.flush()
-        res.status(201).json({message: 'ok', data: turno})
-    }   catch (error:any) {
-        res.status(500).json({ message: error.message })
+  try {
+    const { fecha, hora, estado, descripcion, medicoId, pacienteId } = req.body;
+
+    // Buscar el Medico con el medicoId
+    const medico = await em.findOne(Medico, { id: medicoId });
+    if (!medico) {
+      return res.status(400).json({ message: 'Medico no encontrado' });
     }
-    
+
+    // Buscar el Paciente con el pacienteId
+    const paciente = await em.findOne(Paciente, { id: pacienteId });
+    if (!paciente) {
+      return res.status(400).json({ message: 'Paciente no encontrado' });
+    }
+
+    // Crear el turno con los objetos Medico y Paciente
+    const turno = em.create(Turno, {
+      fecha,
+      hora,
+      estado,
+      descripcion,
+      medico,  // Asigna el objeto Medico
+      paciente  // Asigna el objeto Paciente
+    });
+
+    await em.flush();
+    res.status(201).json({ message: 'Turno creado', data: turno });
+
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+
+  console.log("Datos recibidos para crear el turno:", req.body);
 }
 
 async function update(req: Request, res: Response) {
@@ -55,13 +81,26 @@ async function update(req: Request, res: Response) {
 
   async function remove(req: Request, res: Response) {
     try {
-      const id = Number.parseInt(req.params.id)
-      const turno = em.getReference(Turno, id)
-      await em.removeAndFlush(turno)
+      // Convertir el ID a número
+      const id = Number.parseInt(req.params.id);
+  
+      // Asegúrate de obtener el turno completo desde la base de datos
+      const turno = await em.findOne(Turno, { id });
+  
+      if (!turno) {
+        return res.status(404).json({ message: 'Turno no encontrado' }); // Si el turno no existe
+      }
+  
+      // Eliminar el turno encontrado
+      await em.removeAndFlush(turno);
+  
+      res.status(200).json({ message: 'Turno eliminado con éxito' }); // Respuesta exitosa
     } catch (error: any) {
-      res.status(500).json({ message: error.message })
+      console.error('Error al eliminar el turno:', error); // Log para depuración
+      res.status(500).json({ message: 'Error al eliminar el turno', error: error.message }); // Respuesta de error
     }
   }
+  
 
 
 
