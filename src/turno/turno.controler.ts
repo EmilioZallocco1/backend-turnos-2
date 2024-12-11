@@ -27,9 +27,13 @@ async function findOne(req: Request, res: Response) {
 }
 
 async function add(req: Request, res: Response) {
-    
+    const medico = req.body.medicoId
+    const paciente = req.body.pacienteId
+    const turnoAux = { ...req.body, medico, paciente }
+    delete turnoAux.medicoId
+    delete turnoAux.pacienteId
     try {
-        const turno = em.create(Turno, req.body)
+        const turno = em.create(Turno, turnoAux)
         await em.flush()
         res.status(201).json({message: 'ok', data: turno})
     }   catch (error:any) {
