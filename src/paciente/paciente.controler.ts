@@ -13,27 +13,27 @@ async function register(req: Request, res: Response) {
     // Log de los datos recibidos
     //console.log('Datos recibidos:', req.body);
   try {
-    // 1. Validar los campos obligatorios
+    // Validar los campos obligatorios
     if (!nombre || !apellido || !email || !password || !obraSocialId) {
       return res.status(400).json({ message: 'Nombre, apellido, email, contraseña y obra social son obligatorios.' });
     }
 
-    // 2. Verificar si ya existe un paciente con el mismo email
+    //  Verificar si ya existe un paciente con el mismo email
     const existingPaciente = await em.findOne(Paciente, { email });
     if (existingPaciente) {
       return res.status(400).json({ message: 'El email ya está en uso.' });
     }
 
-    // 3. Verificar si la obra social existe
+    //  Verificar si la obra social existe
     const obraSocial = await em.findOne(ObraSocial, { id: obraSocialId });
     if (!obraSocial) {
       return res.status(404).json({ message: 'La obra social proporcionada no existe.' });
     }
 
-    // 4. Hashear la contraseña
+    //  Hashear la contraseña
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // 5. Crear el nuevo paciente, asegurándose de que obraSocial es obligatoria
+    //  Crear el nuevo paciente, asegurándose de que obraSocial es obligatoria
     const paciente = em.create(Paciente, {
       nombre,
       apellido,
@@ -131,18 +131,25 @@ async function findOne(req: Request, res: Response) {
 
 
 async function update(req: Request, res: Response) {
-    try {
-      const id = Number.parseInt(req.params.id)
-      const pacienteToUpdate = await em.findOneOrFail(Paciente, { id })
-      em.assign(pacienteToUpdate, req.body.sanitizedInput)
-      await em.flush()
-      res
-        .status(200)
-        .json({ message: 'paciente updated', data: pacienteToUpdate })
-    } catch (error: any) {
-      res.status(500).json({ message: error.message })
+  try {
+    const id = Number.parseInt(req.params.id);
+    const pacienteToUpdate = await em.findOneOrFail(Paciente, { id });
+
+    // Si se envía obraSocial como ID, buscarla
+    const data = req.body;
+    if (data.obraSocial && typeof data.obraSocial === 'object' && data.obraSocial.id) {
+      data.obraSocial = await em.findOneOrFail(ObraSocial, { id: data.obraSocial.id });
     }
+
+    em.assign(pacienteToUpdate, data);
+    await em.flush();
+
+    res.status(200).json({ message: 'Paciente actualizado', data: pacienteToUpdate });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
   }
+}
+
 
 
   async function remove(req: Request, res: Response) {
