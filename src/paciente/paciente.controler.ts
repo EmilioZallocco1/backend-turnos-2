@@ -9,7 +9,7 @@ const em = orm.em.fork();
 
 
 async function register(req: Request, res: Response) {
-  const { nombre, apellido, email, password, obraSocialId } = req.body;
+  const { nombre, apellido, email, password, obraSocialId,role } = req.body;
     // Log de los datos recibidos
     //console.log('Datos recibidos:', req.body);
   try {
@@ -40,7 +40,7 @@ async function register(req: Request, res: Response) {
       email,
       passwordHash,
       obraSocial,
-      role: 'paciente',   // Se pasa la obra social validada
+      role: role || 'paciente',   // Se pasa la obra social validada
     });
 
     // 6. Persistir el paciente en la base de datos

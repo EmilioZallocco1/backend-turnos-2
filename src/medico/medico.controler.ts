@@ -27,16 +27,46 @@ async function findOne(req: Request, res: Response) {
 }
 
 async function add(req: Request, res: Response) {
-    
-    try {
-        const medico = em.create(Medico, req.body)
-        await em.flush()
-        res.status(201).json({message: 'ok', data: medico})
-    }   catch (error:any) {
-        res.status(500).json({ message: error.message })
+  console.log('Body recibido:', req.body);
+
+  try {
+    const { nombre, email, telefono, especialidad, obraSocial } = req.body;
+
+    if (!especialidad?.id) {
+      return res.status(400).json({ message: 'Falta el ID de la especialidad' });
     }
-    
+
+    const especialidadObj = await em.findOneOrFail('Especialidad', { id: especialidad.id });
+
+    let obraSocialObj = null;
+    if (obraSocial?.id) {
+      obraSocialObj = await em.findOne('ObraSocial', { id: obraSocial.id });
+    }
+
+    // Construir los datos del médico
+    const datosMedico: any = {
+      nombre,
+      email,
+      telefono,
+      especialidad: especialidadObj,
+    };
+
+    if (obraSocialObj) {
+      datosMedico.obraSocial = obraSocialObj;
+    }
+
+    const medico = em.create(Medico, datosMedico);
+    await em.flush();
+
+    res.status(201).json({ message: 'ok', data: medico });
+
+  } catch (error: any) {
+    console.error('Error al registrar médico:', error);
+    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+  }
 }
+
+
 
 async function remove(req: Request, res: Response) {
     try {

@@ -31,7 +31,7 @@ export class Paciente {
   @Property()
   role: string = 'paciente';
 
-  @Property({ nullable: true }) // 👈 nuevo campo
+  @Property({ nullable: true }) // 
   telefono?: string;
 
   @ManyToOne(() => ObraSocial, { nullable: false })

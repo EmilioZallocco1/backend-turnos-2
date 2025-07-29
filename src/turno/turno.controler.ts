@@ -101,9 +101,29 @@ async function update(req: Request, res: Response) {
     }
   }
   
+  async function findTurnosByMedico(req: Request, res: Response) {
+  try {
+    const medicoId = Number(req.params.id);
+
+    if (isNaN(medicoId)) {
+      return res.status(400).json({ message: 'ID de médico inválido' });
+    }
+
+    const turnos = await em.find(Turno, { medico: medicoId }, { populate: ['paciente', 'medico'] });
+
+    if (!turnos || turnos.length === 0) {
+      return res.status(404).json({ message: 'No se encontraron turnos para este médico' });
+    }
+
+    res.status(200).json({ message: 'Turnos del médico obtenidos con éxito', data: turnos });
+  } catch (error: any) {
+    console.error('Error al obtener turnos del médico:', error);
+    res.status(500).json({ message: 'Error interno', error: error.message });
+  }
+}
 
 
 
 
 
-export { add, remove, update, findOne, findAll }
+export { add, remove, update, findOne, findAll,findTurnosByMedico }
