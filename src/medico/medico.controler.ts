@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { orm } from '../shared/db/orm.js'
 import { Medico } from './medico.entity.js'
+import { Turno } from '../turno/turno.entity.js'
 
 const em = orm.em
 
@@ -68,17 +69,33 @@ async function add(req: Request, res: Response) {
 
 
 
-async function remove(req: Request, res: Response) {
-    try {
-      const id = Number.parseInt(req.params.id)
-      const medico = em.getReference(Medico, id)
-      await em.removeAndFlush(medico)
-    } catch (error: any) {
-      res.status(500).json({ message: error.message })
+ async function remove(req: Request, res: Response) {
+  try {
+    const id = Number.parseInt(req.params.id)
+
+    // 1) Verificar que exista
+    const medico = await em.findOne(Medico, { id })
+    if (!medico) return res.status(404).json({ message: 'Médico no encontrado' })
+
+    // 2) Bloquear si tiene turnos asociados
+    const turnosAsociados = await em.count(Turno, { medico: medico })
+    if (turnosAsociados > 0) {
+      return res.status(409).json({
+        message: `No se puede eliminar: tiene ${turnosAsociados} turno(s) asociado(s).`
+      })
     }
+
+    // 3) Eliminar
+    await em.removeAndFlush(medico)
+    return res.status(204).send()
+  } catch (error: any) {
+    return res.status(500).json({ message: error.message })
   }
+}
 
 async function update(req: Request, res: Response) {
+    console.log('Body recibido para update:', req.body);
+
     try {
       const id = Number.parseInt(req.params.id)
       const medicoToUpdate = await em.findOneOrFail(Medico, { id })
