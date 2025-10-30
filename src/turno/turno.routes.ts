@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { findAll, findOne, add, update, remove, findTurnosByMedico } from "./turno.controler.js";
+import { findAll, findOne, add, update, remove, findTurnosByMedico, checkOverlap } from "./turno.controler.js";
 
 export const turnoRouter = Router();
 
@@ -9,3 +9,4 @@ turnoRouter.post("/", add);
 turnoRouter.put("/:id", update);
 turnoRouter.delete("/:id", remove);
 turnoRouter.get('/medico/:id', findTurnosByMedico);
+turnoRouter.get('/medicos/:id/turnos/overlap', checkOverlap); 

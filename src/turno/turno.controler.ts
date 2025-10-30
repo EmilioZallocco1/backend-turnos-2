@@ -3,6 +3,7 @@ import { orm } from '../shared/db/orm.js'
 import { Turno } from './turno.entity.js'
 import { Medico } from '../medico/medico.entity.js'
 import { Paciente } from '../paciente/paciente.entity.js'
+import { intervalsOverlap, startOfDayUTC, endOfDayUTC, combineDateAndTime, addMinutes } from '../utils/turnos.helpers.js';
 
 const em = orm.em
 
@@ -31,39 +32,55 @@ async function findOne(req: Request, res: Response) {
 async function add(req: Request, res: Response) {
   try {
     const { fecha, hora, estado, descripcion, medicoId, pacienteId } = req.body;
+    const DURACION_MIN = 30; // duración fija de cada turno en minutos
 
-    // Buscar el Medico con el medicoId
+    // Buscar médico y paciente
     const medico = await em.findOne(Medico, { id: medicoId });
-    if (!medico) {
-      return res.status(400).json({ message: 'Medico no encontrado' });
-    }
+    if (!medico) return res.status(400).json({ message: 'Médico no encontrado' });
 
-    // Buscar el Paciente con el pacienteId
     const paciente = await em.findOne(Paciente, { id: pacienteId });
-    if (!paciente) {
-      return res.status(400).json({ message: 'Paciente no encontrado' });
+    if (!paciente) return res.status(400).json({ message: 'Paciente no encontrado' });
+
+    // Combinar fecha + hora
+    const inicio = new Date(`${fecha}T${hora}`);
+    const fin = new Date(inicio.getTime() + DURACION_MIN * 60 * 1000);
+
+    // Buscar turnos existentes del mismo médico (podés filtrar por día si querés optimizar)
+    const turnosExistentes = await em.find(Turno, { medico: medicoId });
+
+    // Verificar superposición
+    const haySuperposicion = turnosExistentes.some(t => {
+      const tInicio = new Date(`${t.fecha.toISOString().split('T')[0]}T${t.hora}`);
+      const tFin = new Date(tInicio.getTime() + DURACION_MIN * 60 * 1000);
+      return inicio < tFin && fin > tInicio;
+    });
+
+    if (haySuperposicion) {
+      return res.status(409).json({
+        message: 'El turno se superpone con otro del mismo médico',
+      });
     }
 
-    // Crear el turno con los objetos Medico y Paciente
+    // Crear y guardar turno
     const turno = em.create(Turno, {
-      fecha,
-      hora,
-      estado,
-      descripcion,
-      //duracionMin: 20,
-      medico,  // Asigna el objeto Medico
-      paciente  // Asigna el objeto Paciente
+      fecha: new Date(fecha),
+      hora: String(hora),
+      estado: String(estado),
+      descripcion: String(descripcion),
+      medico,
+      paciente,
     });
 
     await em.flush();
-    res.status(201).json({ message: 'Turno creado', data: turno });
 
+    res.status(201).json({ message: 'Turno creado correctamente', data: turno });
+    console.log('Turno creado:', turno);
   } catch (error: any) {
+    console.error('Error al crear turno:', error);
     res.status(500).json({ message: error.message });
   }
-
-  console.log("Datos recibidos para crear el turno:", req.body);
 }
+
 
 async function update(req: Request, res: Response) {
     try {
@@ -127,8 +144,44 @@ async function update(req: Request, res: Response) {
 //SOLAPAMIENTO DE TURNOS
 
 
+async function checkOverlap(req: Request, res: Response) {
+  try {
+    const medicoId = Number(req.params.id);
+    const { inicio, fin, duracionMin } = req.query as { inicio?: string; fin?: string; duracionMin?: string; };
+
+    if (isNaN(medicoId)) return res.status(400).json({ message: 'ID de médico inválido' });
+
+    // Si no mandan fin, calculamos con duracionMin (default 30)
+    const dur = Number(duracionMin ?? 30);
+    if (!inicio && !fin) return res.status(400).json({ message: 'Parámetros inválidos: enviar inicio y fin o inicio+duracionMin' });
+
+    const ini = inicio ? new Date(inicio) : undefined;
+    const fi  = fin    ? new Date(fin)    : (ini ? addMinutes(ini, dur) : undefined);
+    if (!ini || !fi) return res.status(400).json({ message: 'Fechas inválidas' });
+
+    // Traigo turnos del mismo día del médico para chequear en memoria
+    const dayStart = startOfDayUTC(ini);
+    const dayEnd   = endOfDayUTC(ini);
+
+    const turnos = await em.find(Turno, { 
+      medico: medicoId,
+      fecha: { $gte: dayStart, $lte: dayEnd }
+    });
+
+    const overlap = turnos.some(t => {
+      const tIni = combineDateAndTime(t.fecha, t.hora);
+      const tDur = (t as any).duracionMin ?? 30; // si no tenés el campo, usa default 30
+      const tFin = addMinutes(tIni, tDur);
+      return intervalsOverlap(ini, fi, tIni, tFin);
+    });
+
+    return res.status(200).json({ overlap });
+  } catch (error:any) {
+    console.error('checkOverlap error', error);
+    res.status(500).json({ message: error.message });
+  }
+}
 
 
 
-
-export { add, remove, update, findOne, findAll,findTurnosByMedico }
+export { add, remove, update, findOne, findAll,findTurnosByMedico,checkOverlap }
