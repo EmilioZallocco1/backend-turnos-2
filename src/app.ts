@@ -35,7 +35,7 @@ app.use('/api/especialidades/',especialidadRouter)
 app.use('/api/medicos/', medicoRouter)
 app.use('/api/turnos/', turnoRouter)
 app.use('/api/pacientes/', pacienteRouter)
-app.use('/api/obrasSocial/', obraSocialRouter)
+app.use('/api/obras-sociales/', obraSocialRouter)
 
 //===================================================================
 

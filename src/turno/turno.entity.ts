@@ -20,6 +20,11 @@ export class Turno {
   @Property()
   descripcion!: string; // Descripción del turno (motivo de la consulta, diagnostico, etc.)
 
+  // turno.entity.ts
+  //@Property()
+  //duracionMin!: number; // p.ej. 30
+
+
   @ManyToOne (()=>Medico,{nullable:false}) // Relaciona con la entidad Medico 1 a N
   medico !: Rel<Medico>
 

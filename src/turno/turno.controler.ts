@@ -50,6 +50,7 @@ async function add(req: Request, res: Response) {
       hora,
       estado,
       descripcion,
+      //duracionMin: 20,
       medico,  // Asigna el objeto Medico
       paciente  // Asigna el objeto Paciente
     });
@@ -121,6 +122,10 @@ async function update(req: Request, res: Response) {
     res.status(500).json({ message: 'Error interno', error: error.message });
   }
 }
+
+
+//SOLAPAMIENTO DE TURNOS
+
 
 
 
