@@ -9,7 +9,7 @@ async function findAll(req: Request, res: Response) {
   try {
     const medicos = await em.find(
       Medico,
-      {},
+      { activo: true },
       { populate: ["especialidad", "obraSocial"] }
     );
     res.status(200).json({ message: "ok", data: medicos });
@@ -23,7 +23,7 @@ async function findOne(req: Request, res: Response) {
     const id = Number.parseInt(req.params.id);
     const medico = await em.findOneOrFail(
       Medico,
-      { id },
+      { id, activo: true },
       { populate: ["especialidad", "obraSocial"] }
     );
     res.status(200).json({ message: "ok", data: medico });
@@ -98,10 +98,15 @@ async function remove(req: Request, res: Response) {
       });
     }
 
-    await em.removeAndFlush(medico);
-    return res.status(204).send();
+    medico.activo = false;
+    await em.flush();
+
+    return res
+      .status(200)
+      .json({ message: "Médico dado de baja correctamente" });
   } catch (error: any) {
-    return res.status(500).json({ message: error.message });
+    console.error("Error al eliminar (baja lógica) médico:", error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 }
 

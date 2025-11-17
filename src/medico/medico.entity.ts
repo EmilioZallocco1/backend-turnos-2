@@ -21,6 +21,9 @@ export class Medico {
   @Property()
   telefono!: string;
 
+  @Property({ default: true })
+  activo: boolean = true;
+
   @ManyToOne(()=> ObraSocial,{nullable:true})
   obraSocial?: Rel<ObraSocial>
 
