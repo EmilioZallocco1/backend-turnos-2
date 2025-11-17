@@ -11,24 +11,23 @@ export class Turno {
   fecha!: Date;
 
   @Property()
-  hora!: string; // Hora como string (formato HH:mm), puedes usar otro tipo si prefieres manejar tiempos de otra manera
+  hora!: string; 
 
 
   @Property()
   estado!: string; // Estado del turno (Pendiente, Confirmado, Cancelado, etc.)
 
   @Property()
-  descripcion!: string; // Descripción del turno (motivo de la consulta, diagnostico, etc.)
-
+  descripcion!: string; 
   // turno.entity.ts
   //@Property()
   //duracionMin!: number; // p.ej. 30
 
 
-  @ManyToOne (()=>Medico,{nullable:false}) // Relaciona con la entidad Medico 1 a N
+  @ManyToOne (()=>Medico,{nullable:false}) 
   medico !: Rel<Medico>
 
-  @ManyToOne (()=>Paciente,{nullable:false}) // Relaciona con la entidad Paciente 1 a N
+  @ManyToOne (()=>Paciente,{nullable:false}) 
   paciente !: Rel<Paciente>
 
 

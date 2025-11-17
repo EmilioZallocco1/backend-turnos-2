@@ -31,8 +31,7 @@ export class Medico {
 //   @OneToMany(() => Horario, (horario) => horario.medico)
 //   horarios = new Collection<Horario>(this);
 
-//   @OneToMany(() => Turno, (turno) => turno.medico)
-//   turnos = new Collection<Turno>(this);
+
 
 
 }

@@ -183,5 +183,72 @@ async function checkOverlap(req: Request, res: Response) {
 }
 
 
+async function getHorariosDisponibles(req: Request, res: Response) {
+  try {
+    const medicoId = Number(req.query.medicoId as string);
+    const fechaStr = req.query.fecha as string; // formato 'YYYY-MM-DD'
 
-export { add, remove, update, findOne, findAll,findTurnosByMedico,checkOverlap }
+    if (!medicoId || !fechaStr) {
+      return res.status(400).json({ message: 'medicoId y fecha son requeridos' });
+    }
+
+    const medico = await em.findOne(Medico, { id: medicoId });
+    if (!medico) {
+      return res.status(404).json({ message: 'Médico no encontrado' });
+    }
+
+    const fechaBase = new Date(fechaStr + 'T00:00:00.000Z');
+
+    // Traer turnos de ese día para ese médico (excepto cancelados)
+    const dayStart = startOfDayUTC(fechaBase);
+    const dayEnd   = endOfDayUTC(fechaBase);
+
+    const turnos = await em.find(
+      Turno,
+      {
+        medico: medicoId,
+        fecha: { $gte: dayStart, $lte: dayEnd },
+        estado: { $ne: 'cancelado' },   // los cancelados no bloquean
+      }
+    );
+
+    const DURACION_MIN = 30;
+
+    // Rango de agenda (adaptalo si querés otros horarios)
+    const inicioJornada = combineDateAndTime(fechaBase, '09:00');
+    const finJornada    = combineDateAndTime(fechaBase, '17:00');
+
+    const horariosDisponibles: string[] = [];
+
+    let slotInicio = inicioJornada;
+    while (slotInicio < finJornada) {
+      const slotFin = addMinutes(slotInicio, DURACION_MIN);
+
+      // ¿se pisa con algún turno existente?
+      const seSuperpone = turnos.some(t => {
+        const tIni = combineDateAndTime(t.fecha, t.hora);
+        const tFin = addMinutes(tIni, DURACION_MIN);
+        return intervalsOverlap(slotInicio, slotFin, tIni, tFin);
+      });
+
+      if (!seSuperpone) {
+        // Formato HH:mm
+        const hh = slotInicio.getUTCHours().toString().padStart(2, '0');
+        const mm = slotInicio.getUTCMinutes().toString().padStart(2, '0');
+        horariosDisponibles.push(`${hh}:${mm}`);
+      }
+
+      slotInicio = slotFin;
+    }
+
+    return res.status(200).json({ message: 'ok', data: horariosDisponibles });
+  } catch (error: any) {
+    console.error('Error al obtener horarios disponibles:', error);
+    res.status(500).json({ message: error.message });
+  }
+}
+
+
+
+
+export { add, remove, update, findOne, findAll,findTurnosByMedico,checkOverlap, getHorariosDisponibles };
