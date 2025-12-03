@@ -10,6 +10,7 @@ const em = orm.em.fork();
 async function register(req: Request, res: Response) {
   const { nombre, apellido, email, password, obraSocialId, role } = req.body;
   // Log de los datos recibidos
+  console.log("Datos recibidos en /register:", req.body);
   //console.log('Datos recibidos:', req.body);
   try {
     // Validar los campos obligatorios
