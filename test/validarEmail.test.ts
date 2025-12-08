@@ -18,4 +18,17 @@ describe('esEmailValido', () => {
     expect(esEmailValido("test@@example.com")).toBe(false);
   });
 
+  
+
+describe("esEmailValido - prueba rápida", () => {
+  test("pepito3 debe ser inválido", () => {
+    expect(esEmailValido("pepito3")).toBe(false);
+  });
+
+  test("pepito3@gmail.com debe ser válido", () => {
+    expect(esEmailValido("pepito3@gmail.com")).toBe(true);
+  });
+});
+
+
 });

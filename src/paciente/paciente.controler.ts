@@ -4,6 +4,8 @@ import { Paciente } from "./paciente.entity.js";
 import bcrypt from "bcrypt";
 import { ObraSocial } from "../obraSocial/obrasocial.entity.js";
 import { Turno } from "../turno/turno.entity.js";
+import { esEmailValido } from "../utils/validarEmail.js";
+import { esContraseniaValida } from "../utils/validarContrasenia.js";
 
 const em = orm.em.fork();
 
@@ -21,6 +23,22 @@ async function register(req: Request, res: Response) {
           message:
             "Nombre, apellido, email, contraseña y obra social son obligatorios.",
         });
+    }
+
+    console.log("DEBUG esEmailValido(email):", esEmailValido(email));
+
+    //valida formato del email
+    if (!esEmailValido(email)) {
+      return res
+        .status(400)
+        .json({ message: "El email no tiene un formato válido." });
+    }
+
+     if (!esContraseniaValida(password)) {
+      return res.status(400).json({
+        message:
+          "La contraseña no es válida. Debe tener al menos 8 caracteres e incluir letras y números.",
+      });
     }
 
     //  Verificar si ya existe un paciente con el mismo email
@@ -91,7 +109,7 @@ async function login(req: Request, res: Response) {
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
-    // Opcional: generar un token JWT
+    
     console.log(`Login exitoso para Email: ${email}`);
     res.status(200).json({ message: "Login exitoso", data: usuario });
   } catch (error: any) {
