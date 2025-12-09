@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
     "incremental": true,
-    "target": "es2020",
+    "target": "ES2020",
     "module": "ES2022",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "sourceMap": true,
-    "outDir": "./dist",
+    "rootDir": "src",        // 👈 TODO parte de src
+    "outDir": "dist",        // 👈 TODO va a dist
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -14,6 +15,6 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true
   },
-  "include": ["src/**/*", "**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*.ts"],          // 👈 SOLO src
+  "exclude": ["node_modules", "dist"]  // 👈 no re-compile dist
 }
