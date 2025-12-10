@@ -1,19 +1,21 @@
 import { MikroORM } from '@mikro-orm/core';
 import { SqlHighlighter } from '@mikro-orm/sql-highlighter';
+import 'dotenv/config';
+
 
 // nombre de BD: viene por env, si no, usa el local por defecto
-const dbName = process.env.DB_NAME ?? 'dswturnos';
+//const dbName = process.env.DB_NAME ?? 'dswturnos';
 
 // URL de conexión completa (MySQL):
 //  - En Render: la vas a poner en DB_URL (mysql://usuario:pass@host:puerto/bd)
 //  - En tu PC: sigue usando localhost si no hay DB_URL
 const clientUrl =
-  process.env.DB_URL ?? 'mysql://root:4406@localhost:3306/dswturnos';
+  process.env.DATABASE_URL ?? 'mysql://root:4406@localhost:3306/dswturnos';
 
 export const orm = await MikroORM.init({
   entities: ['dist/**/*.entity.js'],
   entitiesTs: ['src/**/*.entity.ts'],
-  dbName,
+  //dbName,
   type: 'mysql',
   clientUrl,
   highlighter: new SqlHighlighter(),
