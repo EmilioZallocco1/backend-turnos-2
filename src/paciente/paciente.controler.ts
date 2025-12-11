@@ -91,10 +91,20 @@ async function register(req: Request, res: Response) {
 
       const token = generarToken(paciente);
 
+      const pacienteDTO = {
+      id: paciente.id,
+      nombre: paciente.nombre,
+      apellido: paciente.apellido,
+      email: paciente.email,
+      role: paciente.role || "paciente",
+      obraSocial: paciente.obraSocial?.id ?? null,
+      token,
+    };
+
     // 7. Enviar la respuesta de éxito
     res
       .status(201)
-      .json({ message: "Paciente registrado exitosamente", data: paciente,token, });
+      .json({ message: "Paciente registrado exitosamente", data: pacienteDTO, });
   } catch (error: any) {
     // Manejar cualquier error
     res
@@ -135,12 +145,23 @@ async function login(req: Request, res: Response) {
     // generar el token JWT
     const token = generarToken(usuario);
 
-    res.status(200).json({ message: "Login exitoso", data: usuario,token,});
+    const pacienteDTO = {
+      id: usuario.id,
+      nombre: usuario.nombre,
+      apellido: usuario.apellido,
+      email: usuario.email,
+      role: usuario.role || "paciente",
+      telefono: (usuario as any).telefono ?? null,
+      obraSocial: (usuario as any).obraSocial ?? null,
+      token, // Incluir el token en la respuesta
+    };
+
+    res.status(200).json({ message: "Login exitoso", data: pacienteDTO,});
   } catch (error: any) {
     console.error("Error en el proceso de login:", error.message); // Imprimir error en la consola
     res.status(500).json({ message: error.message });
   }
-}
+} 
 
 async function findAll(req: Request, res: Response) {
   try {
