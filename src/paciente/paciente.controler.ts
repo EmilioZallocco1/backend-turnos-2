@@ -6,8 +6,25 @@ import { ObraSocial } from "../obraSocial/obrasocial.entity.js";
 import { Turno } from "../turno/turno.entity.js";
 import { esEmailValido } from "../utils/validarEmail.js";
 import { esContraseniaValida } from "../utils/validarContrasenia.js";
+import jwt from "jsonwebtoken";
+
 
 const em = orm.em.fork();
+
+
+//funcion para generar el token
+function generarToken(paciente: Paciente) {
+  const payload = {
+    id: paciente.id,
+    role: paciente.role || "paciente",
+  };
+  // Usa JWT_SECRET del .env, y si no existe, una de desarrollo
+  const secret = process.env.JWT_SECRET || "dev-secret";
+
+  // El token vence en 1 hora (podés ajustar)
+  return jwt.sign(payload, secret, { expiresIn: "1h" });
+}
+
 
 async function register(req: Request, res: Response) {
   const { nombre, apellido, email, password, obraSocialId, role } = req.body;
@@ -68,13 +85,16 @@ async function register(req: Request, res: Response) {
       role: role || "paciente", // Se pasa la obra social validada
     });
 
+    
     // 6. Persistir el paciente en la base de datos
     await em.persistAndFlush(paciente);
+
+      const token = generarToken(paciente);
 
     // 7. Enviar la respuesta de éxito
     res
       .status(201)
-      .json({ message: "Paciente registrado exitosamente", data: paciente });
+      .json({ message: "Paciente registrado exitosamente", data: paciente,token, });
   } catch (error: any) {
     // Manejar cualquier error
     res
@@ -111,7 +131,11 @@ async function login(req: Request, res: Response) {
 
     
     console.log(`Login exitoso para Email: ${email}`);
-    res.status(200).json({ message: "Login exitoso", data: usuario });
+
+    // generar el token JWT
+    const token = generarToken(usuario);
+
+    res.status(200).json({ message: "Login exitoso", data: usuario,token,});
   } catch (error: any) {
     console.error("Error en el proceso de login:", error.message); // Imprimir error en la consola
     res.status(500).json({ message: error.message });

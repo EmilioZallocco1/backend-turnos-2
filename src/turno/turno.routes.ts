@@ -1,9 +1,11 @@
 import { Router } from "express";
+import { authMiddleware } from '../auth/auth.middleware.js';
 import { findAll, findOne, add, update, remove, findTurnosByMedico, checkOverlap, getHorariosDisponibles } from "./turno.controler.js";
 
 export const turnoRouter = Router();
 
 
+turnoRouter.use(authMiddleware);  //todo lo de turnos requiere login
 
 turnoRouter.get('/disponibles', getHorariosDisponibles);
 turnoRouter.get("/", findAll);
