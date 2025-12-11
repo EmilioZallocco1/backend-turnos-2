@@ -153,10 +153,10 @@ async function login(req: Request, res: Response) {
       role: usuario.role || "paciente",
       telefono: (usuario as any).telefono ?? null,
       obraSocial: (usuario as any).obraSocial ?? null,
-      token, // Incluir el token en la respuesta
+     
     };
 
-    res.status(200).json({ message: "Login exitoso", data: pacienteDTO,});
+    res.status(200).json({ message: "Login exitoso",data: pacienteDTO, token,});
   } catch (error: any) {
     console.error("Error en el proceso de login:", error.message); // Imprimir error en la consola
     res.status(500).json({ message: error.message });
