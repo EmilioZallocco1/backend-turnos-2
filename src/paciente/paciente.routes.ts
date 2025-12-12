@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { authMiddleware } from '../auth/auth.middleware.js' 
+import { requireAdmin } from '../auth/role.middleware.js'
 import {
   findAll,
   findOne,
@@ -7,7 +8,8 @@ import {
   remove,
   register,
   login,
-  findTurnosByPacienteId
+  findTurnosByPacienteId,
+  registerByAdmin,
 } from '../paciente/paciente.controler.js'
 
 export const pacienteRouter = Router()
@@ -25,3 +27,6 @@ pacienteRouter.get('/:id', findOne)
 pacienteRouter.put('/:id', update)
 pacienteRouter.delete('/:id', remove)
 pacienteRouter.get('/:id/turnos', findTurnosByPacienteId)
+// ruta solo para admin
+pacienteRouter.post('/admin/create', authMiddleware, requireAdmin, registerByAdmin);
+

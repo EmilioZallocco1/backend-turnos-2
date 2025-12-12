@@ -82,7 +82,7 @@ async function register(req: Request, res: Response) {
       email,
       passwordHash,
       obraSocial,
-      role: role || "paciente", // Se pasa la obra social validada
+      role:  "paciente", // Se pasa la obra social validada
     });
 
     
@@ -112,6 +112,83 @@ async function register(req: Request, res: Response) {
       .json({ message: "Error interno del servidor", error: error.message });
   }
 }
+
+
+async function registerByAdmin(req: Request, res: Response) {
+  const { nombre, apellido, email, password, obraSocialId, role } = req.body;
+
+  try {
+    // Campos obligatorios
+    if (!nombre || !apellido || !email || !password || !obraSocialId) {
+      return res.status(400).json({
+        message: "Nombre, apellido, email, contraseña y obra social son obligatorios.",
+      });
+    }
+
+    // Validación de email
+    if (!esEmailValido(email)) {
+      return res.status(400).json({ message: "El email no tiene un formato válido." });
+    }
+
+    // Validación de contraseña
+    if (!esContraseniaValida(password)) {
+      return res.status(400).json({
+        message:
+          "La contraseña no es válida. Debe tener al menos 8 caracteres e incluir letras y números.",
+      });
+    }
+
+    // Verificar si ya existe un paciente con el mismo email
+    const existingPaciente = await em.findOne(Paciente, { email });
+    if (existingPaciente) {
+      return res.status(400).json({ message: "El email ya está en uso." });
+    }
+
+    // Verificar obra social
+    const obraSocial = await em.findOne(ObraSocial, { id: obraSocialId });
+    if (!obraSocial) {
+      return res.status(404).json({ message: "La obra social proporcionada no existe." });
+    }
+
+    // Definir rol final
+    // Si el admin no manda role, se crea PACIENTE por defecto
+    const roleFinal = role === "admin" ? "admin" : "paciente";
+
+    // Hashear contraseña
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Crear el paciente/usuario
+    const paciente = em.create(Paciente, {
+      nombre,
+      apellido,
+      email,
+      passwordHash,
+      obraSocial,
+      role: roleFinal,
+    });
+
+    await em.persistAndFlush(paciente);
+
+    const pacienteDTO = {
+      id: paciente.id,
+      nombre: paciente.nombre,
+      apellido: paciente.apellido,
+      email: paciente.email,
+      role: paciente.role,
+      obraSocial: paciente.obraSocial?.id ?? null,
+    };
+
+    res.status(201).json({
+      message: "Usuario creado exitosamente por un administrador",
+      data: pacienteDTO,
+    });
+
+  } catch (error: any) {
+    console.error("Error en registerByAdmin:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+}
+
 
 async function login(req: Request, res: Response) {
   const { email, password } = req.body; // Cambiado a 'email'
@@ -279,6 +356,7 @@ async function findTurnosByPacienteId(req: Request, res: Response) {
 export {
   login,
   register,
+  registerByAdmin,
   remove,
   update,
   findOne,
