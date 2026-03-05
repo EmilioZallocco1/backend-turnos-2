@@ -255,7 +255,7 @@ async function findAll(req: Request, res: Response) {
 
 async function findOne(req: Request, res: Response) {
   try {
-    const id = Number.parseInt(req.params.id);
+    const id = (req as any).user?.id;
     const medico = await em.findOneOrFail(
       Paciente,
       { id },
@@ -269,7 +269,8 @@ async function findOne(req: Request, res: Response) {
 
 async function update(req: Request, res: Response) {
   try {
-    const id = Number.parseInt(req.params.id);
+    const id = (req as any).user?.id;
+    if (!id) return res.status(401).json({ message: "No autenticado" });
     const pacienteToUpdate = await em.findOneOrFail(Paciente, { id });
 
     // Si se envía obraSocial como ID, buscarla
@@ -297,8 +298,8 @@ async function update(req: Request, res: Response) {
 
 async function remove(req: Request, res: Response) {
   try {
-    // Convertir el ID a número
-    const id = Number.parseInt(req.params.id);
+    const id = (req as any).user?.id;
+if (!id) return res.status(401).json({ message: "No autenticado" });
 
     // Asegúrate de obtener al paciente completo desde la base de datos
     const paciente = await em.findOne(Paciente, { id });
@@ -323,10 +324,10 @@ async function remove(req: Request, res: Response) {
 async function findTurnosByPacienteId(req: Request, res: Response) {
   try {
     // Obtener el ID del paciente desde los parámetros de la URL
-    const pacienteId = Number.parseInt(req.params.id);
+    const pacienteId = (req as any).user?.id;
 
-    if (isNaN(pacienteId)) {
-      return res.status(400).json({ message: "ID de paciente inválido" });
+    if (!pacienteId) {
+      return res.status(401).json({ message: "No autenticado" });
     }
 
     // Buscar los turnos del paciente usando su ID
