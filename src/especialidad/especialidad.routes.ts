@@ -2,15 +2,20 @@
  import { findAll, findOne, add, update, remove } from "./especialidad.controler.js";
  import { authMiddleware } from "../auth/auth.middleware.js";
  import { requireAdmin } from "../auth/role.middleware.js";
+import {
+  especialidadIdValidator,
+  addEspecialidadValidator,
+  updateEspecialidadValidator,
+} from "./especialidad.validator.js";
+import { validateFields } from "../middlewares/validateFields.js";
 
 
  export const especialidadRouter = Router();
 
-
-especialidadRouter.use(authMiddleware,requireAdmin );
-
  especialidadRouter.get("/", findAll);
- especialidadRouter.get("/:id", findOne);
- especialidadRouter.post("/", add);
- especialidadRouter.put("/:id", update);
- especialidadRouter.delete("/:id", remove);
+
+
+ especialidadRouter.get("/:id",especialidadIdValidator, validateFields, findOne);
+ especialidadRouter.post("/",authMiddleware, requireAdmin, addEspecialidadValidator, validateFields, add);
+ especialidadRouter.put("/:id", authMiddleware, requireAdmin, updateEspecialidadValidator, validateFields, update);
+ especialidadRouter.delete("/:id", authMiddleware, requireAdmin, especialidadIdValidator, validateFields, remove);

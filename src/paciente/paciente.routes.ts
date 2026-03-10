@@ -17,7 +17,7 @@ import {
   loginPacienteValidator,
   updatePacienteValidator,
 } from "./paciente.validator.js";
-import { validateFields } from "../middlewares/validateFieldsPaciente.js";
+import { validateFields } from "../middlewares/validateFields.js";
 
 export const pacienteRouter = Router();
 
