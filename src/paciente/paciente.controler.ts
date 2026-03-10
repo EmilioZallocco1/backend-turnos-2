@@ -1,356 +1,151 @@
 import { Request, Response } from "express";
-import { orm } from "../shared/db/orm.js";
-import { Paciente } from "./paciente.entity.js";
-import bcrypt from "bcrypt";
-import { ObraSocial } from "../obraSocial/obrasocial.entity.js";
-import { Turno } from "../turno/turno.entity.js";
-import { esEmailValido } from "../utils/validarEmail.js";
-import { esContraseniaValida } from "../utils/validarContrasenia.js";
-import jwt from "jsonwebtoken";
+import {
+  registerPaciente,
+  registerPacienteByAdmin,
+  loginPaciente,
+  getAllPacientes,
+  getPacienteById,
+  updatePaciente,
+  deletePaciente,
+  getTurnosByPacienteId,
+} from "./paciente.service.js";
 
+function getStatusCode(errorMessage: string): number {
+  if (
+    errorMessage.includes("ya está en uso") ||
+    errorMessage.includes("inválida") ||
+    errorMessage.includes("inválido")
+  ) {
+    return 400;
+  }
 
-const em = orm.em.fork();
+  if (errorMessage.includes("Credenciales inválidas")) {
+    return 401;
+  }
 
+  if (
+    errorMessage.includes("no existe") ||
+    errorMessage.includes("no encontrado") ||
+    errorMessage.includes("No se encontraron")
+  ) {
+    return 404;
+  }
 
-//funcion para generar el token
-function generarToken(paciente: Paciente) {
-  const payload = {
-    id: paciente.id,
-    role: paciente.role || "paciente",
-  };
-  // Usa JWT_SECRET del .env, y si no existe, una de desarrollo
-  const secret = process.env.JWT_SECRET || "dev-secret";
-
-  // El token vence en 1 hora (podés ajustar)
-  return jwt.sign(payload, secret, { expiresIn: "1h" });
+  return 500;
 }
 
-
 async function register(req: Request, res: Response) {
-  const { nombre, apellido, email, password, obraSocialId, role } = req.body;
-  // Log de los datos recibidos
-  console.log("Datos recibidos en /register:", req.body);
-  //console.log('Datos recibidos:', req.body);
   try {
-    // Validar los campos obligatorios
-    if (!nombre || !apellido || !email || !password || !obraSocialId) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Nombre, apellido, email, contraseña y obra social son obligatorios.",
-        });
-    }
-
-    console.log("DEBUG esEmailValido(email):", esEmailValido(email));
-
-    //valida formato del email
-    if (!esEmailValido(email)) {
-      return res
-        .status(400)
-        .json({ message: "El email no tiene un formato válido." });
-    }
-
-     if (!esContraseniaValida(password)) {
-      return res.status(400).json({
-        message:
-          "La contraseña no es válida. Debe tener al menos 8 caracteres e incluir letras y números.",
-      });
-    }
-
-    //  Verificar si ya existe un paciente con el mismo email
-    const existingPaciente = await em.findOne(Paciente, { email });
-    if (existingPaciente) {
-      return res.status(400).json({ message: "El email ya está en uso." });
-    }
-
-    //  Verificar si la obra social existe
-    const obraSocial = await em.findOne(ObraSocial, { id: obraSocialId });
-    if (!obraSocial) {
-      return res
-        .status(404)
-        .json({ message: "La obra social proporcionada no existe." });
-    }
-
-    //  Hashear la contraseña
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    //  Crear el nuevo paciente, asegurándose de que obraSocial es obligatoria
-    const paciente = em.create(Paciente, {
-      nombre,
-      apellido,
-      email,
-      passwordHash,
-      obraSocial,
-      role:  "paciente", // Se pasa la obra social validada
+    const pacienteDTO = await registerPaciente(req.body);
+    res.status(201).json({
+      message: "Paciente registrado exitosamente",
+      data: pacienteDTO,
     });
-
-    
-    // 6. Persistir el paciente en la base de datos
-    await em.persistAndFlush(paciente);
-
-      const token = generarToken(paciente);
-
-      const pacienteDTO = {
-      id: paciente.id,
-      nombre: paciente.nombre,
-      apellido: paciente.apellido,
-      email: paciente.email,
-      role: paciente.role || "paciente",
-      obraSocial: paciente.obraSocial?.id ?? null,
-      token,
-    };
-
-    // 7. Enviar la respuesta de éxito
-    res
-      .status(201)
-      .json({ message: "Paciente registrado exitosamente", data: pacienteDTO, });
   } catch (error: any) {
-    // Manejar cualquier error
-    res
-      .status(500)
-      .json({ message: "Error interno del servidor", error: error.message });
+    res.status(getStatusCode(error.message)).json({ message: error.message });
   }
 }
 
-
 async function registerByAdmin(req: Request, res: Response) {
-  const { nombre, apellido, email, password, obraSocialId, role } = req.body;
-
   try {
-    // Campos obligatorios
-    if (!nombre || !apellido || !email || !password || !obraSocialId) {
-      return res.status(400).json({
-        message: "Nombre, apellido, email, contraseña y obra social son obligatorios.",
-      });
-    }
-
-    // Validación de email
-    if (!esEmailValido(email)) {
-      return res.status(400).json({ message: "El email no tiene un formato válido." });
-    }
-
-    // Validación de contraseña
-    if (!esContraseniaValida(password)) {
-      return res.status(400).json({
-        message:
-          "La contraseña no es válida. Debe tener al menos 8 caracteres e incluir letras y números.",
-      });
-    }
-
-    // Verificar si ya existe un paciente con el mismo email
-    const existingPaciente = await em.findOne(Paciente, { email });
-    if (existingPaciente) {
-      return res.status(400).json({ message: "El email ya está en uso." });
-    }
-
-    // Verificar obra social
-    const obraSocial = await em.findOne(ObraSocial, { id: obraSocialId });
-    if (!obraSocial) {
-      return res.status(404).json({ message: "La obra social proporcionada no existe." });
-    }
-
-    // Definir rol final
-    // Si el admin no manda role, se crea PACIENTE por defecto
-    const roleFinal = role === "admin" ? "admin" : "paciente";
-
-    // Hashear contraseña
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Crear el paciente/usuario
-    const paciente = em.create(Paciente, {
-      nombre,
-      apellido,
-      email,
-      passwordHash,
-      obraSocial,
-      role: roleFinal,
-    });
-
-    await em.persistAndFlush(paciente);
-
-    const pacienteDTO = {
-      id: paciente.id,
-      nombre: paciente.nombre,
-      apellido: paciente.apellido,
-      email: paciente.email,
-      role: paciente.role,
-      obraSocial: paciente.obraSocial?.id ?? null,
-    };
-
+    const pacienteDTO = await registerPacienteByAdmin(req.body);
     res.status(201).json({
       message: "Usuario creado exitosamente por un administrador",
       data: pacienteDTO,
     });
-
   } catch (error: any) {
-    console.error("Error en registerByAdmin:", error);
-    res.status(500).json({ message: "Error interno del servidor" });
+    res.status(getStatusCode(error.message)).json({ message: error.message });
   }
 }
 
-
 async function login(req: Request, res: Response) {
-  const { email, password } = req.body; // Cambiado a 'email'
-
   try {
-    // Validar que el email y la contraseña estén presentes
-    if (!email || !password) {
-      console.log("Error: Email y contraseña son obligatorios");
-      return res
-        .status(400)
-        .json({ message: "Email y contraseña son obligatorios" });
-    }
-
-    // Buscar el usuario en la base de datos por email
-    const usuario = await em.findOne(Paciente, { email });
-    if (!usuario) {
-      console.log(`Error: Credenciales inválidas para Email: ${email}`);
-      return res.status(401).json({ message: "Credenciales inválidas" });
-    }
-
-    // Comparar la contraseña proporcionada con el hash almacenado
-    const isMatch = await bcrypt.compare(password, usuario.passwordHash);
-    if (!isMatch) {
-      console.log(`Error: Contraseña incorrecta para Email: ${email}`);
-      return res.status(401).json({ message: "Credenciales inválidas" });
-    }
-
-    
-    console.log(`Login exitoso para Email: ${email}`);
-
-    // generar el token JWT
-    const token = generarToken(usuario);
-
-    const pacienteDTO = {
-      id: usuario.id,
-      nombre: usuario.nombre,
-      apellido: usuario.apellido,
-      email: usuario.email,
-      role: usuario.role || "paciente",
-      telefono: (usuario as any).telefono ?? null,
-      obraSocial: (usuario as any).obraSocial ?? null,
-     
-    };
-
-    res.status(200).json({ message: "Login exitoso",data: pacienteDTO, token,});
+    const result = await loginPaciente(req.body);
+    res.status(200).json({
+      message: "Login exitoso",
+      data: result.paciente,
+      token: result.token,
+    });
   } catch (error: any) {
-    console.error("Error en el proceso de login:", error.message); // Imprimir error en la consola
-    res.status(500).json({ message: error.message });
+    res.status(getStatusCode(error.message)).json({ message: error.message });
   }
-} 
+}
 
 async function findAll(req: Request, res: Response) {
   try {
-    const pacientes = await em.find(
-      Paciente,
-      {},
-      { populate: ["obraSocial", "turnos"] }
-    );
+    const pacientes = await getAllPacientes();
     res.status(200).json({ message: "ok", data: pacientes });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    res.status(getStatusCode(error.message)).json({ message: error.message });
   }
 }
 
 async function findOne(req: Request, res: Response) {
   try {
     const id = (req as any).user?.id;
-    const medico = await em.findOneOrFail(
-      Paciente,
-      { id },
-      { populate: ["turnos", "obraSocial"] }
-    );
-    res.status(200).json({ message: "ok", data: medico });
+
+    if (!id) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    const paciente = await getPacienteById(id);
+    res.status(200).json({ message: "ok", data: paciente });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    res.status(getStatusCode(error.message)).json({ message: error.message });
   }
 }
 
 async function update(req: Request, res: Response) {
   try {
     const id = (req as any).user?.id;
-    if (!id) return res.status(401).json({ message: "No autenticado" });
-    const pacienteToUpdate = await em.findOneOrFail(Paciente, { id });
 
-    // Si se envía obraSocial como ID, buscarla
-    const data = req.body;
-    if (
-      data.obraSocial &&
-      typeof data.obraSocial === "object" &&
-      data.obraSocial.id
-    ) {
-      data.obraSocial = await em.findOneOrFail(ObraSocial, {
-        id: data.obraSocial.id,
-      });
+    if (!id) {
+      return res.status(401).json({ message: "No autenticado" });
     }
 
-    em.assign(pacienteToUpdate, data);
-    await em.flush();
+    const pacienteActualizado = await updatePaciente(id, req.body);
 
-    res
-      .status(200)
-      .json({ message: "Paciente actualizado", data: pacienteToUpdate });
+    res.status(200).json({
+      message: "Paciente actualizado",
+      data: pacienteActualizado,
+    });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    res.status(getStatusCode(error.message)).json({ message: error.message });
   }
 }
 
 async function remove(req: Request, res: Response) {
   try {
     const id = (req as any).user?.id;
-if (!id) return res.status(401).json({ message: "No autenticado" });
 
-    // Asegúrate de obtener al paciente completo desde la base de datos
-    const paciente = await em.findOne(Paciente, { id });
-
-    if (!paciente) {
-      return res.status(404).json({ message: "Paciente no encontrado" }); // Si el paciente no existe
+    if (!id) {
+      return res.status(401).json({ message: "No autenticado" });
     }
 
-    // Eliminar el paciente encontrado
-    await em.removeAndFlush(paciente);
+    await deletePaciente(id);
 
-    res.status(200).json({ message: "Paciente eliminado con éxito" }); // Respuesta exitosa
+    res.status(200).json({ message: "Paciente eliminado con éxito" });
   } catch (error: any) {
-    console.error("Error al eliminar el paciente:", error); // Log para depuración
-    res
-      .status(500)
-      .json({ message: "Error al eliminar el paciente", error: error.message }); // Respuesta de error
+    res.status(getStatusCode(error.message)).json({ message: error.message });
   }
 }
 
-// Nuevo método para obtener los turnos del paciente usando el id como parámetro
 async function findTurnosByPacienteId(req: Request, res: Response) {
   try {
-    // Obtener el ID del paciente desde los parámetros de la URL
     const pacienteId = (req as any).user?.id;
 
     if (!pacienteId) {
       return res.status(401).json({ message: "No autenticado" });
     }
 
-    // Buscar los turnos del paciente usando su ID
-    const turnos = await em.find(
-      Turno,
-      { paciente: pacienteId },
-      { populate: ["paciente", "medico"] }
-    );
+    const turnos = await getTurnosByPacienteId(pacienteId);
 
-    if (turnos.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No se encontraron turnos para este paciente" });
-    }
-
-    res
-      .status(200)
-      .json({ message: "Turnos obtenidos con éxito", data: turnos });
+    res.status(200).json({
+      message: "Turnos obtenidos con éxito",
+      data: turnos,
+    });
   } catch (error: any) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "Error al obtener los turnos", error: error.message });
+    res.status(getStatusCode(error.message)).json({ message: error.message });
   }
 }
 
