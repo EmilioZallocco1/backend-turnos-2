@@ -6,13 +6,24 @@ import {
   updateObraSocial,
   removeObraSocial,
 } from './obrasocial.service.js'
+import { buildPaginationResponse, getPagination } from '../utils/pagination.js'
 
 async function findAll(req: Request, res: Response) {
   try {
-    const obrasSociales = await findAllObrasSociales()
-    res.status(200).json({ message: 'ok', data: obrasSociales })
+    const { page, limit, offset } = getPagination(req.query);
+
+    const { obrasSociales, total } = await findAllObrasSociales(
+      page,
+      limit,
+      offset
+    );
+
+    res.status(200).json({
+      message: "ok",
+      ...buildPaginationResponse(obrasSociales, total, page, limit),
+    });
   } catch (error: any) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ message: error.message });
   }
 }
 

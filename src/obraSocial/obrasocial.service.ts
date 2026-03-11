@@ -3,9 +3,17 @@ import { ObraSocial } from './obrasocial.entity.js'
 
 const em = orm.em
 
-async function findAllObrasSociales() {
-  const obrasSociales = await em.find(ObraSocial, {})
-  return obrasSociales
+async function findAllObrasSociales(page: number, limit: number, offset: number) {
+  const [obrasSociales, total] = await em.findAndCount(
+    ObraSocial,
+    {},
+    {
+      limit,
+      offset,
+    }
+  );
+
+  return { obrasSociales, total };
 }
 
 async function findOneObraSocial(id: number) {
