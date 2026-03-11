@@ -9,6 +9,7 @@ import {
   verifyOverlap,
   getHorariosDisponiblesByMedico,
 } from "./turno.service.js";
+import { getPagination, buildPaginationResponse } from "../utils/pagination.js";
 
 function getStatusCode(errorMessage: string): number {
   if (
@@ -34,8 +35,13 @@ function getStatusCode(errorMessage: string): number {
 
 async function findAll(req: Request, res: Response) {
   try {
-    const turnos = await getAllTurnos();
-    res.status(200).json({ message: "ok", data: turnos });
+    const { page, limit, offset } = getPagination(req.query);
+    const {turnos, total} = await getAllTurnos(offset, limit);
+
+     res.status(200).json({
+      message: "ok",
+      ...buildPaginationResponse(turnos, total, page, limit),
+    });
   } catch (error: any) {
     res.status(getStatusCode(error.message)).json({ message: error.message });
   }

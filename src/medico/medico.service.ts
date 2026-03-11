@@ -6,12 +6,19 @@ import { ObraSocial } from "../obraSocial/obrasocial.entity.js";
 
 const em = orm.em.fork();
 
-async function getAllMedicos() {
-  return await em.find(
+async function getAllMedicos(limit = 10, offset = 0) {
+  const [medicos, total] = await em.findAndCount(
     Medico,
     { activo: true },
-    { populate: ["especialidad", "obraSocial"] }
+    {
+      populate: ["especialidad", "obraSocial"],
+      limit,
+      offset,
+      orderBy: { id: "ASC" },
+    }
   );
+
+  return { medicos, total };
 }
 
 async function getMedicoById(id: number) {

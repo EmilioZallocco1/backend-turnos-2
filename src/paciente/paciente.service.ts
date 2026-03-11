@@ -201,18 +201,27 @@ async function deletePaciente(id: number) {
   await em.removeAndFlush(paciente);
 }
 
-async function getTurnosByPacienteId(pacienteId: number) {
-  const turnos = await em.find(
+async function getTurnosByPacienteId(
+  pacienteId: number,
+  limit: number,
+  offset: number
+) {
+  const [turnos, total] = await em.findAndCount(
     Turno,
     { paciente: pacienteId },
-    { populate: ["paciente", "medico"] }
+    {
+      populate: ["paciente", "medico"],
+      limit,
+      offset,
+      orderBy: { id: "ASC" },
+    }
   );
 
-  if (turnos.length === 0) {
+  if (total === 0) {
     throw new Error("No se encontraron turnos para este paciente");
   }
 
-  return turnos;
+  return { turnos, total };
 }
 
 export {

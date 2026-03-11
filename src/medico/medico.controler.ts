@@ -6,6 +6,7 @@ import {
   updateMedico,
   deleteMedico,
 } from "./medico.service.js";
+import { getPagination, buildPaginationResponse } from "../utils/pagination.js";
 
 function getStatusCode(errorMessage: string): number {
   if (
@@ -31,8 +32,12 @@ function getStatusCode(errorMessage: string): number {
 
 async function findAll(req: Request, res: Response) {
   try {
-    const medicos = await getAllMedicos();
-    res.status(200).json({ message: "ok", data: medicos });
+    const { page, limit, offset } = getPagination(req.query);
+    const { medicos, total } = await getAllMedicos(limit, offset);
+    res.status(200).json({
+      message: "ok",
+      ...buildPaginationResponse(medicos, total, page, limit),
+    });
   } catch (error: any) {
     res.status(getStatusCode(error.message)).json({ message: error.message });
   }

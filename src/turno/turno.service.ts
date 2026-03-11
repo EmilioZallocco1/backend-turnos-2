@@ -12,8 +12,19 @@ import {
 
 const em = orm.em.fork();
 
-async function getAllTurnos() {
-  return await em.find(Turno, {}, { populate: ["paciente", "medico"] });
+async function getAllTurnos(limit = 5, offset = 0) {
+  const [turnos, total] = await em.findAndCount(
+    Turno,
+    {},
+    {
+      populate: ["paciente", "medico"],
+      limit,
+      offset,
+      orderBy: { id: "ASC" },
+    }
+  );
+
+  return { turnos, total };
 }
 
 async function getTurnoById(id: number) {

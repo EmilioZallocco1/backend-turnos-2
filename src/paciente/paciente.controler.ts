@@ -9,7 +9,7 @@ import {
   deletePaciente,
   getTurnosByPacienteId,
 } from "./paciente.service.js";
-
+import { getPagination, buildPaginationResponse } from "../utils/pagination.js";
 function getStatusCode(errorMessage: string): number {
   if (
     errorMessage.includes("ya está en uso") ||
@@ -138,14 +138,22 @@ async function findTurnosByPacienteId(req: Request, res: Response) {
       return res.status(401).json({ message: "No autenticado" });
     }
 
-    const turnos = await getTurnosByPacienteId(pacienteId);
+    const { page, limit, offset } = getPagination(req.query);
+
+    const { turnos, total } = await getTurnosByPacienteId(
+      pacienteId,
+      limit,
+      offset
+    );
 
     res.status(200).json({
       message: "Turnos obtenidos con éxito",
-      data: turnos,
+      ...buildPaginationResponse(turnos, total, page, limit),
     });
   } catch (error: any) {
-    res.status(getStatusCode(error.message)).json({ message: error.message });
+    res.status(getStatusCode(error.message)).json({
+      message: error.message,
+    });
   }
 }
 
