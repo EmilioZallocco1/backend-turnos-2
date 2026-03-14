@@ -4,16 +4,18 @@ import {
   UnauthorizedError,
 } from "../shared/errors/appError.js";
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const user = (req as any).user;
+export function requireRole(...allowedRoles: string[]) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(new UnauthorizedError("No autenticado"));
+    }
 
-  if (!user) {
-    return next(new UnauthorizedError("No autenticado"));
-  }
+    if (!allowedRoles.includes(req.user.role)) {
+      return next(new ForbiddenError("No autorizado"));
+    }
 
-  if (user.role !== "admin") {
-    return next(new ForbiddenError("No autorizado (solo administradores)"));
-  }
-
-  next();
+    next();
+  };
 }
+
+export const requireAdmin = requireRole("admin");

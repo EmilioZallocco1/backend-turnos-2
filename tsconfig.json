@@ -5,8 +5,8 @@
     "module": "ES2022",
     "moduleResolution": "node",
     "sourceMap": true,
-    "rootDir": "src",        // 👈 TODO parte de src
-    "outDir": "dist",        // 👈 TODO va a dist
+    "rootDir": "src",
+    "outDir": "dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -15,6 +15,6 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true
   },
-  "include": ["src/**/*.ts"],          // 👈 SOLO src
-  "exclude": ["node_modules", "dist"]  // 👈 no re-compile dist
+  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "exclude": ["node_modules", "dist"]
 }

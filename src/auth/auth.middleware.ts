@@ -1,31 +1,25 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
 import { UnauthorizedError } from "../shared/errors/appError.js";
+import { getAuthenticatedPacienteById } from "../paciente/paciente.service.js";
+import { readSessionTokenFromRequest, verifySessionToken } from "./auth.utils.js";
 
-interface JwtPayload {
-  id: number;
-  role: string;
-  iat: number;
-  exp: number;
-}
-
-export function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers["authorization"];
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return next(new UnauthorizedError("Token no enviado"));
-  }
-
-  const token = authHeader.split(" ")[1];
-
+export async function authMiddleware(req: Request, _res: Response, next: NextFunction) {
   try {
-    const secret = process.env.JWT_SECRET || "dev-secret";
-    const decoded = jwt.verify(token, secret) as JwtPayload;
+    const token = readSessionTokenFromRequest(req);
+    if (!token) {
+      return next(new UnauthorizedError("Sesion no enviada"));
+    }
 
-    (req as any).user = decoded;
+    const decoded = verifySessionToken(token);
+    const userId = Number(decoded.sub);
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return next(new UnauthorizedError("Sesion invalida"));
+    }
+
+    req.user = await getAuthenticatedPacienteById(userId);
     next();
-  } catch (error) {
-    console.error("Error verificando JWT:", error);
-    return next(new UnauthorizedError("Token inválido o expirado"));
+  } catch {
+    return next(new UnauthorizedError("Sesion invalida o expirada"));
   }
 }

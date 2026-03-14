@@ -5,40 +5,42 @@ import { Turno } from "../turno/turno.entity.js";
 import bcrypt from "bcrypt";
 import { esEmailValido } from "../utils/validarEmail.js";
 import { esContraseniaValida } from "../utils/validarContrasenia.js";
-import jwt from "jsonwebtoken";
+import { signSessionToken } from "../auth/auth.utils.js";
+import type { AuthenticatedUser } from "../auth/auth.types.js";
+import { UnauthorizedError } from "../shared/errors/appError.js";
 
 const em = orm.em.fork();
 
-function generarToken(paciente: Paciente) {
-  const payload = {
+function toAuthenticatedUser(paciente: Paciente): AuthenticatedUser {
+  return {
     id: paciente.id,
+    nombre: paciente.nombre,
+    apellido: paciente.apellido,
+    email: paciente.email,
     role: paciente.role || "paciente",
   };
-
-  const secret = process.env.JWT_SECRET || "dev-secret";
-  return jwt.sign(payload, secret, { expiresIn: "1h" });
 }
 
 async function registerPaciente(data: any) {
   const { nombre, apellido, email, password, obraSocialId } = data;
 
   if (!nombre || !apellido || !email || !password || !obraSocialId) {
-    throw new Error("Nombre, apellido, email, contraseña y obra social son obligatorios.");
+    throw new Error("Nombre, apellido, email, contrasena y obra social son obligatorios.");
   }
 
   if (!esEmailValido(email)) {
-    throw new Error("El email no tiene un formato válido.");
+    throw new Error("El email no tiene un formato valido.");
   }
 
   if (!esContraseniaValida(password)) {
     throw new Error(
-      "La contraseña no es válida. Debe tener al menos 8 caracteres e incluir letras y números."
+      "La contrasena no es valida. Debe tener al menos 8 caracteres e incluir letras y numeros.",
     );
   }
 
   const existingPaciente = await em.findOne(Paciente, { email });
   if (existingPaciente) {
-    throw new Error("El email ya está en uso.");
+    throw new Error("El email ya esta en uso.");
   }
 
   const obraSocial = await em.findOne(ObraSocial, { id: obraSocialId });
@@ -59,8 +61,6 @@ async function registerPaciente(data: any) {
 
   await em.persistAndFlush(paciente);
 
-  const token = generarToken(paciente);
-
   return {
     id: paciente.id,
     nombre: paciente.nombre,
@@ -68,7 +68,6 @@ async function registerPaciente(data: any) {
     email: paciente.email,
     role: paciente.role || "paciente",
     obraSocial: paciente.obraSocial?.id ?? null,
-    token,
   };
 }
 
@@ -76,22 +75,22 @@ async function registerPacienteByAdmin(data: any) {
   const { nombre, apellido, email, password, obraSocialId, role } = data;
 
   if (!nombre || !apellido || !email || !password || !obraSocialId) {
-    throw new Error("Nombre, apellido, email, contraseña y obra social son obligatorios.");
+    throw new Error("Nombre, apellido, email, contrasena y obra social son obligatorios.");
   }
 
   if (!esEmailValido(email)) {
-    throw new Error("El email no tiene un formato válido.");
+    throw new Error("El email no tiene un formato valido.");
   }
 
   if (!esContraseniaValida(password)) {
     throw new Error(
-      "La contraseña no es válida. Debe tener al menos 8 caracteres e incluir letras y números."
+      "La contrasena no es valida. Debe tener al menos 8 caracteres e incluir letras y numeros.",
     );
   }
 
   const existingPaciente = await em.findOne(Paciente, { email });
   if (existingPaciente) {
-    throw new Error("El email ya está en uso.");
+    throw new Error("El email ya esta en uso.");
   }
 
   const obraSocial = await em.findOne(ObraSocial, { id: obraSocialId });
@@ -128,33 +127,33 @@ async function loginPaciente(data: any) {
   const { email, password } = data;
 
   if (!email || !password) {
-    throw new Error("Email y contraseña son obligatorios");
+    throw new Error("Email y contrasena son obligatorios");
   }
 
   const usuario = await em.findOne(Paciente, { email }, { populate: ["obraSocial"] });
   if (!usuario) {
-    throw new Error("Credenciales inválidas");
+    throw new Error("Credenciales invalidas");
   }
 
   const isMatch = await bcrypt.compare(password, usuario.passwordHash);
   if (!isMatch) {
-    throw new Error("Credenciales inválidas");
+    throw new Error("Credenciales invalidas");
   }
 
-  const token = generarToken(usuario);
-
   return {
-    paciente: {
-      id: usuario.id,
-      nombre: usuario.nombre,
-      apellido: usuario.apellido,
-      email: usuario.email,
-      role: usuario.role || "paciente",
-      telefono: (usuario as any).telefono ?? null,
-      obraSocial: (usuario as any).obraSocial ?? null,
-    },
-    token,
+    user: toAuthenticatedUser(usuario),
+    token: signSessionToken(usuario.id),
   };
+}
+
+async function getAuthenticatedPacienteById(id: number) {
+  const paciente = await em.findOne(Paciente, { id });
+
+  if (!paciente) {
+    throw new UnauthorizedError("Usuario autenticado no encontrado");
+  }
+
+  return toAuthenticatedUser(paciente);
 }
 
 async function getAllPacientes() {
@@ -165,7 +164,7 @@ async function getPacienteById(id: number) {
   return await em.findOneOrFail(
     Paciente,
     { id },
-    { populate: ["turnos", "obraSocial"] }
+    { populate: ["turnos", "obraSocial"] },
   );
 }
 
@@ -204,7 +203,7 @@ async function deletePaciente(id: number) {
 async function getTurnosByPacienteId(
   pacienteId: number,
   limit: number,
-  offset: number
+  offset: number,
 ) {
   const [turnos, total] = await em.findAndCount(
     Turno,
@@ -214,7 +213,7 @@ async function getTurnosByPacienteId(
       limit,
       offset,
       orderBy: { id: "ASC" },
-    }
+    },
   );
 
   if (total === 0) {
@@ -228,6 +227,7 @@ export {
   registerPaciente,
   registerPacienteByAdmin,
   loginPaciente,
+  getAuthenticatedPacienteById,
   getAllPacientes,
   getPacienteById,
   updatePaciente,

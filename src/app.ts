@@ -1,13 +1,16 @@
 import "reflect-metadata";
+import "./shared/config/loadEnv.js";
 import express from "express";
 import cors from "cors";
 import { orm, syncSchema } from "./shared/db/orm.js";
 import { RequestContext } from "@mikro-orm/core";
+import { authRouter } from "./auth/auth.routes.js";
 import { especialidadRouter } from "./especialidad/especialidad.routes.js";
 import { medicoRouter } from "./medico/medico.routes.js";
 import { turnoRouter } from "./turno/turno.routes.js";
 import { pacienteRouter } from "./paciente/paciente.routes.js";
 import { obraSocialRouter } from "./obraSocial/obraSocial.routes.js";
+import { getAllowedOrigins } from "./auth/auth.config.js";
 import {
   errorHandler,
   notFoundHandler,
@@ -19,7 +22,15 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: ["http://localhost:4200", "https://turnos-frontend-tau.vercel.app"],
+    origin: (origin, callback) => {
+      const allowedOrigins = getAllowedOrigins();
+
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Origin no permitido por CORS"));
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   }),
@@ -29,6 +40,7 @@ app.use((req, res, next) => {
   RequestContext.create(orm.em, next);
 });
 
+app.use("/api/auth/", authRouter);
 app.use("/api/especialidades/", especialidadRouter);
 app.use("/api/medicos/", medicoRouter);
 app.use("/api/turnos/", turnoRouter);

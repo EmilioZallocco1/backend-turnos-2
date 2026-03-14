@@ -12,6 +12,17 @@ import {
 import { getPagination, buildPaginationResponse } from "../utils/pagination.js";
 import { asyncHandler } from "../shared/errors/asyncHandler.js";
 import { UnauthorizedError } from "../shared/errors/appError.js";
+import { clearSessionCookie, setSessionCookie } from "../auth/auth.utils.js";
+
+function requireAuthenticatedUserId(req: Request) {
+  const id = req.user?.id;
+
+  if (!id) {
+    throw new UnauthorizedError("No autenticado");
+  }
+
+  return id;
+}
 
 const register = asyncHandler(async (req: Request, res: Response) => {
   const pacienteDTO = await registerPaciente(req.body);
@@ -31,11 +42,17 @@ const registerByAdmin = asyncHandler(async (req: Request, res: Response) => {
 
 const login = asyncHandler(async (req: Request, res: Response) => {
   const result = await loginPaciente(req.body);
+  setSessionCookie(res, result.token);
+
   res.status(200).json({
     message: "Login exitoso",
-    data: result.paciente,
-    token: result.token,
+    data: result.user,
   });
+});
+
+const logout = asyncHandler(async (_req: Request, res: Response) => {
+  clearSessionCookie(res);
+  res.status(200).json({ message: "Logout exitoso" });
 });
 
 const findAll = asyncHandler(async (_req: Request, res: Response) => {
@@ -43,25 +60,18 @@ const findAll = asyncHandler(async (_req: Request, res: Response) => {
   res.status(200).json({ message: "ok", data: pacientes });
 });
 
-const findOne = asyncHandler(async (req: Request, res: Response) => {
-  const id = (req as any).user?.id;
-
-  if (!id) {
-    throw new UnauthorizedError("No autenticado");
-  }
-
-  const paciente = await getPacienteById(id);
+const findOwn = asyncHandler(async (req: Request, res: Response) => {
+  const paciente = await getPacienteById(requireAuthenticatedUserId(req));
   res.status(200).json({ message: "ok", data: paciente });
 });
 
-const update = asyncHandler(async (req: Request, res: Response) => {
-  const id = (req as any).user?.id;
+const findById = asyncHandler(async (req: Request, res: Response) => {
+  const paciente = await getPacienteById(Number.parseInt(req.params.id));
+  res.status(200).json({ message: "ok", data: paciente });
+});
 
-  if (!id) {
-    throw new UnauthorizedError("No autenticado");
-  }
-
-  const pacienteActualizado = await updatePaciente(id, req.body);
+const updateOwn = asyncHandler(async (req: Request, res: Response) => {
+  const pacienteActualizado = await updatePaciente(requireAuthenticatedUserId(req), req.body);
 
   res.status(200).json({
     message: "Paciente actualizado",
@@ -69,45 +79,53 @@ const update = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-const remove = asyncHandler(async (req: Request, res: Response) => {
-  const id = (req as any).user?.id;
+const updateById = asyncHandler(async (req: Request, res: Response) => {
+  const pacienteActualizado = await updatePaciente(Number.parseInt(req.params.id), req.body);
 
-  if (!id) {
-    throw new UnauthorizedError("No autenticado");
-  }
-
-  await deletePaciente(id);
-
-  res.status(200).json({ message: "Paciente eliminado con éxito" });
+  res.status(200).json({
+    message: "Paciente actualizado",
+    data: pacienteActualizado,
+  });
 });
 
-const findTurnosByPacienteId = asyncHandler(async (req: Request, res: Response) => {
-  const pacienteId = (req as any).user?.id;
+const removeOwn = asyncHandler(async (req: Request, res: Response) => {
+  await deletePaciente(requireAuthenticatedUserId(req));
+  clearSessionCookie(res);
 
-  if (!pacienteId) {
-    throw new UnauthorizedError("No autenticado");
-  }
+  res.status(200).json({ message: "Paciente eliminado con exito" });
+});
 
+const removeById = asyncHandler(async (req: Request, res: Response) => {
+  await deletePaciente(Number.parseInt(req.params.id));
+
+  res.status(200).json({ message: "Paciente eliminado con exito" });
+});
+
+const findTurnosByCurrentPaciente = asyncHandler(async (req: Request, res: Response) => {
   const { page, limit, offset } = getPagination(req.query);
   const { turnos, total } = await getTurnosByPacienteId(
-    pacienteId,
+    requireAuthenticatedUserId(req),
     limit,
     offset,
   );
 
   res.status(200).json({
-    message: "Turnos obtenidos con éxito",
+    message: "Turnos obtenidos con exito",
     ...buildPaginationResponse(turnos, total, page, limit),
   });
 });
 
 export {
   login,
+  logout,
   register,
   registerByAdmin,
-  remove,
-  update,
-  findOne,
+  removeOwn,
+  removeById,
+  updateOwn,
+  updateById,
+  findOwn,
+  findById,
   findAll,
-  findTurnosByPacienteId,
+  findTurnosByCurrentPaciente,
 };

@@ -15,11 +15,13 @@ function mapMessageToAppError(message: string): AppError {
   if (
     normalizedMessage.includes("token no enviado") ||
     normalizedMessage.includes("falta token") ||
-    normalizedMessage.includes("token inválido") ||
     normalizedMessage.includes("token invalido") ||
-    normalizedMessage.includes("credenciales inválidas") ||
+    normalizedMessage.includes("token inv") ||
     normalizedMessage.includes("credenciales invalidas") ||
-    normalizedMessage.includes("no autenticado")
+    normalizedMessage.includes("credenciales inv") ||
+    normalizedMessage.includes("no autenticado") ||
+    normalizedMessage.includes("sesion") ||
+    normalizedMessage.includes("usuario autenticado no encontrado")
   ) {
     return new UnauthorizedError(message);
   }
@@ -33,7 +35,7 @@ function mapMessageToAppError(message: string): AppError {
     normalizedMessage.includes("obligatorio") ||
     normalizedMessage.includes("obligatorios") ||
     normalizedMessage.includes("falta") ||
-    normalizedMessage.includes("inválid") ||
+    normalizedMessage.includes("inval") ||
     normalizedMessage.includes("invalid")
   ) {
     return new BadRequestError(message);
@@ -69,7 +71,7 @@ function normalizeError(error: unknown): AppError {
   }
 
   if (error instanceof SyntaxError && "body" in error) {
-    return new BadRequestError("JSON inválido");
+    return new BadRequestError("JSON invalido");
   }
 
   if (error instanceof Error) {

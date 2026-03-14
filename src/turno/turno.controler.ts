@@ -11,10 +11,19 @@ import {
 } from "./turno.service.js";
 import { getPagination, buildPaginationResponse } from "../utils/pagination.js";
 import { asyncHandler } from "../shared/errors/asyncHandler.js";
+import { UnauthorizedError } from "../shared/errors/appError.js";
+
+function requireAuthenticatedUser(req: Request) {
+  if (!req.user) {
+    throw new UnauthorizedError("No autenticado");
+  }
+
+  return req.user;
+}
 
 const findAll = asyncHandler(async (req: Request, res: Response) => {
   const { page, limit, offset } = getPagination(req.query);
-  const { turnos, total } = await getAllTurnos(offset, limit);
+  const { turnos, total } = await getAllTurnos(limit, offset);
 
   res.status(200).json({
     message: "ok",
@@ -24,12 +33,12 @@ const findAll = asyncHandler(async (req: Request, res: Response) => {
 
 const findOne = asyncHandler(async (req: Request, res: Response) => {
   const id = Number.parseInt(req.params.id);
-  const turno = await getTurnoById(id);
+  const turno = await getTurnoById(id, requireAuthenticatedUser(req));
   res.status(200).json({ message: "ok", data: turno });
 });
 
 const add = asyncHandler(async (req: Request, res: Response) => {
-  const turno = await createTurno(req.body);
+  const turno = await createTurno(req.body, requireAuthenticatedUser(req));
   res.status(201).json({
     message: "Turno creado correctamente",
     data: turno,
@@ -38,7 +47,7 @@ const add = asyncHandler(async (req: Request, res: Response) => {
 
 const update = asyncHandler(async (req: Request, res: Response) => {
   const id = Number.parseInt(req.params.id);
-  const turnoActualizado = await updateTurno(id, req.body);
+  const turnoActualizado = await updateTurno(id, req.body, requireAuthenticatedUser(req));
 
   res.status(200).json({
     message: "Turno actualizado",
@@ -48,10 +57,10 @@ const update = asyncHandler(async (req: Request, res: Response) => {
 
 const remove = asyncHandler(async (req: Request, res: Response) => {
   const id = Number.parseInt(req.params.id);
-  await deleteTurno(id);
+  await deleteTurno(id, requireAuthenticatedUser(req));
 
   res.status(200).json({
-    message: "Turno eliminado con éxito",
+    message: "Turno eliminado con exito",
   });
 });
 
@@ -60,7 +69,7 @@ const findTurnosByMedico = asyncHandler(async (req: Request, res: Response) => {
   const turnos = await getTurnosByMedicoId(medicoId);
 
   res.status(200).json({
-    message: "Turnos del médico obtenidos con éxito",
+    message: "Turnos del medico obtenidos con exito",
     data: turnos,
   });
 });

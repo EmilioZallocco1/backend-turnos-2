@@ -7,9 +7,9 @@ import {
   ManyToOne,
   Rel,
   Cascade,
-} from '@mikro-orm/core';
-import { Turno } from '../turno/turno.entity.js';
-import { ObraSocial } from '../obraSocial/obrasocial.entity.js';
+} from "@mikro-orm/core";
+import { Turno } from "../turno/turno.entity.js";
+import { ObraSocial } from "../obraSocial/obrasocial.entity.js";
 
 @Entity()
 export class Paciente {
@@ -25,18 +25,18 @@ export class Paciente {
   @Property()
   email!: string;
 
-  @Property()
+  @Property({ hidden: true })
   passwordHash!: string;
 
   @Property()
-  role: string = 'paciente';
+  role: string = "paciente";
 
-  @Property({ nullable: true }) // 
+  @Property({ nullable: true })
   telefono?: string;
 
   @ManyToOne(() => ObraSocial, { nullable: false })
   obraSocial?: Rel<ObraSocial>;
 
-  @OneToMany(() => Turno, turno => turno.paciente, { cascade: [Cascade.ALL] })
+  @OneToMany(() => Turno, (turno) => turno.paciente, { cascade: [Cascade.ALL] })
   turnos = new Collection<Turno>(this);
 }

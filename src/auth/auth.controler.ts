@@ -1,12 +1,28 @@
-import jwt from "jsonwebtoken";
+import { Request, Response } from "express";
+import { asyncHandler } from "../shared/errors/asyncHandler.js";
+import { loginPaciente } from "../paciente/paciente.service.js";
+import { clearSessionCookie, setSessionCookie } from "./auth.utils.js";
 
-interface JwtPayload {
-  id: number;
-  role: string;
-}
+const login = asyncHandler(async (req: Request, res: Response) => {
+  const result = await loginPaciente(req.body);
+  setSessionCookie(res, result.token);
 
-export function generarToken(payload: JwtPayload): string {
-  const secret = process.env.JWT_SECRET || "dev-secret";
+  res.status(200).json({
+    message: "Login exitoso",
+    data: result.user,
+  });
+});
 
-  return jwt.sign(payload, secret, { expiresIn: "1h" });
-}
+const logout = asyncHandler(async (_req: Request, res: Response) => {
+  clearSessionCookie(res);
+  res.status(200).json({ message: "Logout exitoso" });
+});
+
+const me = asyncHandler(async (req: Request, res: Response) => {
+  res.status(200).json({
+    message: "ok",
+    data: req.user,
+  });
+});
+
+export { login, logout, me };

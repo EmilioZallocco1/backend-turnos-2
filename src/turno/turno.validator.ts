@@ -5,7 +5,7 @@ export const turnoIdValidator = [
     .notEmpty()
     .withMessage("El id es obligatorio")
     .isInt({ gt: 0 })
-    .withMessage("El id debe ser un número entero positivo"),
+    .withMessage("El id debe ser un numero entero positivo"),
 ];
 
 export const addTurnoValidator = [
@@ -13,7 +13,7 @@ export const addTurnoValidator = [
     .notEmpty()
     .withMessage("La fecha es obligatoria")
     .isISO8601()
-    .withMessage("La fecha debe tener un formato válido"),
+    .withMessage("La fecha debe tener un formato valido"),
 
   body("hora")
     .notEmpty()
@@ -30,7 +30,7 @@ export const addTurnoValidator = [
   body("descripcion")
     .optional()
     .isString()
-    .withMessage("La descripción debe ser texto"),
+    .withMessage("La descripcion debe ser texto"),
 
   body("medicoId")
     .notEmpty()
@@ -39,8 +39,7 @@ export const addTurnoValidator = [
     .withMessage("El medicoId debe ser un entero positivo"),
 
   body("pacienteId")
-    .notEmpty()
-    .withMessage("El pacienteId es obligatorio")
+    .optional()
     .isInt({ gt: 0 })
     .withMessage("El pacienteId debe ser un entero positivo"),
 ];
@@ -50,12 +49,12 @@ export const updateTurnoValidator = [
     .notEmpty()
     .withMessage("El id es obligatorio")
     .isInt({ gt: 0 })
-    .withMessage("El id debe ser un número entero positivo"),
+    .withMessage("El id debe ser un numero entero positivo"),
 
   body("fecha")
     .optional()
     .isISO8601()
-    .withMessage("La fecha debe tener un formato válido"),
+    .withMessage("La fecha debe tener un formato valido"),
 
   body("hora")
     .optional()
@@ -70,7 +69,7 @@ export const updateTurnoValidator = [
   body("descripcion")
     .optional()
     .isString()
-    .withMessage("La descripción debe ser texto"),
+    .withMessage("La descripcion debe ser texto"),
 
   body("medicoId")
     .optional()
@@ -86,27 +85,27 @@ export const updateTurnoValidator = [
 export const turnosByMedicoValidator = [
   param("id")
     .notEmpty()
-    .withMessage("El id del médico es obligatorio")
+    .withMessage("El id del medico es obligatorio")
     .isInt({ gt: 0 })
-    .withMessage("El id del médico debe ser un entero positivo"),
+    .withMessage("El id del medico debe ser un entero positivo"),
 ];
 
 export const checkOverlapValidator = [
   param("id")
     .notEmpty()
-    .withMessage("El id del médico es obligatorio")
+    .withMessage("El id del medico es obligatorio")
     .isInt({ gt: 0 })
-    .withMessage("El id del médico debe ser un entero positivo"),
+    .withMessage("El id del medico debe ser un entero positivo"),
 
   query("inicio")
     .optional()
     .isISO8601()
-    .withMessage("inicio debe ser una fecha válida ISO8601"),
+    .withMessage("inicio debe ser una fecha valida ISO8601"),
 
   query("fin")
     .optional()
     .isISO8601()
-    .withMessage("fin debe ser una fecha válida ISO8601"),
+    .withMessage("fin debe ser una fecha valida ISO8601"),
 
   query("duracionMin")
     .optional()
@@ -125,5 +124,5 @@ export const horariosDisponiblesValidator = [
     .notEmpty()
     .withMessage("fecha es requerida")
     .isISO8601()
-    .withMessage("fecha debe tener formato válido"),
+    .withMessage("fecha debe tener formato valido"),
 ];
