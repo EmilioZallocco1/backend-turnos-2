@@ -1,14 +1,18 @@
 import { Request, Response, NextFunction } from "express";
+import {
+  ForbiddenError,
+  UnauthorizedError,
+} from "../shared/errors/appError.js";
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const user = (req as any).user; // viene del authMiddleware
+  const user = (req as any).user;
 
   if (!user) {
-    return res.status(401).json({ message: "No autenticado" });
+    return next(new UnauthorizedError("No autenticado"));
   }
 
   if (user.role !== "admin") {
-    return res.status(403).json({ message: "No autorizado (solo administradores)" });
+    return next(new ForbiddenError("No autorizado (solo administradores)"));
   }
 
   next();

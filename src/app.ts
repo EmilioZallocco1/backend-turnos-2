@@ -8,12 +8,15 @@ import { medicoRouter } from "./medico/medico.routes.js";
 import { turnoRouter } from "./turno/turno.routes.js";
 import { pacienteRouter } from "./paciente/paciente.routes.js";
 import { obraSocialRouter } from "./obraSocial/obraSocial.routes.js";
+import {
+  errorHandler,
+  notFoundHandler,
+} from "./shared/errors/errorHandler.js";
 
 const app = express();
 
 app.use(express.json());
 
-//CONFIGURACION DE CORS PARA PERMITIR SOLO DESDE EL FRONTEND EN DESARROLLO Y PRODUCCION
 app.use(
   cors({
     origin: ["http://localhost:4200", "https://turnos-frontend-tau.vercel.app"],
@@ -22,29 +25,23 @@ app.use(
   }),
 );
 
-// Contexto de MikroORM por request
 app.use((req, res, next) => {
   RequestContext.create(orm.em, next);
 });
 
-// Rutas
 app.use("/api/especialidades/", especialidadRouter);
 app.use("/api/medicos/", medicoRouter);
 app.use("/api/turnos/", turnoRouter);
 app.use("/api/pacientes/", pacienteRouter);
 app.use("/api/obras-sociales/", obraSocialRouter);
 
-// 404
-app.use((_, res) => {
-  return res.status(404).send({ message: "Resource not found" });
-});
+app.use(notFoundHandler);
+app.use(errorHandler);
 
-//  NUNCA correr syncSchema en producción
 if (process.env.NODE_ENV !== "production") {
   await syncSchema();
 }
 
-// Puerto dinámico para Render
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

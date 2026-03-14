@@ -1,70 +1,49 @@
-import { Request, Response } from 'express'
+import { Request, Response } from "express";
 import {
   findAllObrasSociales,
   findOneObraSocial,
   addObraSocial,
   updateObraSocial,
   removeObraSocial,
-} from './obrasocial.service.js'
-import { buildPaginationResponse, getPagination } from '../utils/pagination.js'
+} from "./obrasocial.service.js";
+import { buildPaginationResponse, getPagination } from "../utils/pagination.js";
+import { asyncHandler } from "../shared/errors/asyncHandler.js";
 
-async function findAll(req: Request, res: Response) {
-  try {
-    const { page, limit, offset } = getPagination(req.query);
+const findAll = asyncHandler(async (req: Request, res: Response) => {
+  const { page, limit, offset } = getPagination(req.query);
+  const { obrasSociales, total } = await findAllObrasSociales(page, limit, offset);
 
-    const { obrasSociales, total } = await findAllObrasSociales(
-      page,
-      limit,
-      offset
-    );
+  res.status(200).json({
+    message: "ok",
+    ...buildPaginationResponse(obrasSociales, total, page, limit),
+  });
+});
 
-    res.status(200).json({
-      message: "ok",
-      ...buildPaginationResponse(obrasSociales, total, page, limit),
-    });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-}
+const findOne = asyncHandler(async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id);
+  const obraSocial = await findOneObraSocial(id);
+  res.status(200).json({ message: "ok", data: obraSocial });
+});
 
-async function findOne(req: Request, res: Response) {
-  try {
-    const id = Number.parseInt(req.params.id)
-    const obraSocial = await findOneObraSocial(id)
-    res.status(200).json({ message: 'ok', data: obraSocial })
-  } catch (error: any) {
-    res.status(500).json({ message: error.message })
-  }
-}
+const add = asyncHandler(async (req: Request, res: Response) => {
+  const obraSocial = await addObraSocial(req.body);
+  res.status(201).json({ message: "ok", data: obraSocial });
+});
 
-async function add(req: Request, res: Response) {
-  try {
-    const obraSocial = await addObraSocial(req.body)
-    res.status(201).json({ message: 'ok', data: obraSocial })
-  } catch (error: any) {
-    res.status(500).json({ message: error.message })
-  }
-}
+const update = asyncHandler(async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id);
+  const obraSocialToUpdate = await updateObraSocial(id, req.body.sanitizedInput);
 
-async function update(req: Request, res: Response) {
-  try {
-    const id = Number.parseInt(req.params.id)
-    const obraSocialToUpdate = await updateObraSocial(id, req.body.sanitizedInput)
-    res
-      .status(200)
-      .json({ message: 'obra social updated', data: obraSocialToUpdate })
-  } catch (error: any) {
-    res.status(500).json({ message: error.message })
-  }
-}
+  res.status(200).json({
+    message: "obra social updated",
+    data: obraSocialToUpdate,
+  });
+});
 
-async function remove(req: Request, res: Response) {
-  try {
-    const id = Number.parseInt(req.params.id)
-    await removeObraSocial(id)
-  } catch (error: any) {
-    res.status(500).json({ message: error.message })
-  }
-}
+const remove = asyncHandler(async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id);
+  await removeObraSocial(id);
+  res.status(200).json({ message: "obra social deleted" });
+});
 
-export { add, remove, update, findOne, findAll }
+export { add, remove, update, findOne, findAll };

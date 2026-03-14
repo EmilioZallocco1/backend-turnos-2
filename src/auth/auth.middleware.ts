@@ -1,5 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import { UnauthorizedError } from "../shared/errors/appError.js";
 
 interface JwtPayload {
   id: number;
@@ -9,23 +10,22 @@ interface JwtPayload {
 }
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers['authorization'];
+  const authHeader = req.headers["authorization"];
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Token no enviado' });
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return next(new UnauthorizedError("Token no enviado"));
   }
 
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.split(" ")[1];
 
   try {
-    const secret = process.env.JWT_SECRET || 'dev-secret';
+    const secret = process.env.JWT_SECRET || "dev-secret";
     const decoded = jwt.verify(token, secret) as JwtPayload;
 
-    // guardamos los datos del usuario en el request
     (req as any).user = decoded;
     next();
-  } catch (err) {
-    console.error('Error verificando JWT:', err);
-    return res.status(401).json({ message: 'Token inválido o expirado' });
+  } catch (error) {
+    console.error("Error verificando JWT:", error);
+    return next(new UnauthorizedError("Token inválido o expirado"));
   }
 }

@@ -7,86 +7,46 @@ import {
   deleteMedico,
 } from "./medico.service.js";
 import { getPagination, buildPaginationResponse } from "../utils/pagination.js";
+import { asyncHandler } from "../shared/errors/asyncHandler.js";
 
-function getStatusCode(errorMessage: string): number {
-  if (
-    errorMessage.includes("Falta") ||
-    errorMessage.includes("Ya existe")
-  ) {
-    return 400;
-  }
+const findAll = asyncHandler(async (req: Request, res: Response) => {
+  const { page, limit, offset } = getPagination(req.query);
+  const { medicos, total } = await getAllMedicos(limit, offset);
 
-  if (
-    errorMessage.includes("no existe") ||
-    errorMessage.includes("no encontrado")
-  ) {
-    return 404;
-  }
+  res.status(200).json({
+    message: "ok",
+    ...buildPaginationResponse(medicos, total, page, limit),
+  });
+});
 
-  if (errorMessage.includes("No se puede eliminar")) {
-    return 409;
-  }
+const findOne = asyncHandler(async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id);
+  const medico = await getMedicoById(id);
+  res.status(200).json({ message: "ok", data: medico });
+});
 
-  return 500;
-}
+const add = asyncHandler(async (req: Request, res: Response) => {
+  const medico = await createMedico(req.body);
+  res.status(201).json({ message: "ok", data: medico });
+});
 
-async function findAll(req: Request, res: Response) {
-  try {
-    const { page, limit, offset } = getPagination(req.query);
-    const { medicos, total } = await getAllMedicos(limit, offset);
-    res.status(200).json({
-      message: "ok",
-      ...buildPaginationResponse(medicos, total, page, limit),
-    });
-  } catch (error: any) {
-    res.status(getStatusCode(error.message)).json({ message: error.message });
-  }
-}
+const update = asyncHandler(async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id);
+  const medicoActualizado = await updateMedico(id, req.body);
 
-async function findOne(req: Request, res: Response) {
-  try {
-    const id = Number.parseInt(req.params.id);
-    const medico = await getMedicoById(id);
-    res.status(200).json({ message: "ok", data: medico });
-  } catch (error: any) {
-    res.status(getStatusCode(error.message)).json({ message: error.message });
-  }
-}
+  res.status(200).json({
+    message: "Médico actualizado",
+    data: medicoActualizado,
+  });
+});
 
-async function add(req: Request, res: Response) {
-  try {
-    const medico = await createMedico(req.body);
-    res.status(201).json({ message: "ok", data: medico });
-  } catch (error: any) {
-    res.status(getStatusCode(error.message)).json({ message: error.message });
-  }
-}
+const remove = asyncHandler(async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id);
+  await deleteMedico(id);
 
-async function update(req: Request, res: Response) {
-  try {
-    const id = Number.parseInt(req.params.id);
-    const medicoActualizado = await updateMedico(id, req.body);
-
-    res.status(200).json({
-      message: "Médico actualizado",
-      data: medicoActualizado,
-    });
-  } catch (error: any) {
-    res.status(getStatusCode(error.message)).json({ message: error.message });
-  }
-}
-
-async function remove(req: Request, res: Response) {
-  try {
-    const id = Number.parseInt(req.params.id);
-    await deleteMedico(id);
-
-    res.status(200).json({
-      message: "Médico dado de baja correctamente",
-    });
-  } catch (error: any) {
-    res.status(getStatusCode(error.message)).json({ message: error.message });
-  }
-}
+  res.status(200).json({
+    message: "Médico dado de baja correctamente",
+  });
+});
 
 export { add, remove, update, findOne, findAll };

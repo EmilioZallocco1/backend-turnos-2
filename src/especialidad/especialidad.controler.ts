@@ -6,80 +6,49 @@ import {
   updateEspecialidad,
   deleteEspecialidad,
 } from "./especialidad.service.js";
+import { asyncHandler } from "../shared/errors/asyncHandler.js";
 
-function getStatusCode(errorMessage: string): number {
-  if (errorMessage.includes("Ya existe")) {
-    return 400;
-  }
+const findAll = asyncHandler(async (_req: Request, res: Response) => {
+  const especialidades = await getAllEspecialidades();
+  res.status(200).json({ message: "ok", data: especialidades });
+});
 
-  if (errorMessage.includes("no encontrada")) {
-    return 404;
-  }
+const findOne = asyncHandler(async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id);
+  const especialidad = await getEspecialidadById(id);
 
-  return 500;
-}
+  res.status(200).json({
+    message: "found especialidad",
+    data: especialidad,
+  });
+});
 
-async function findAll(req: Request, res: Response) {
-  try {
-    const especialidades = await getAllEspecialidades();
-    res.status(200).json({ message: "ok", data: especialidades });
-  } catch (error: any) {
-    res.status(getStatusCode(error.message)).json({ message: error.message });
-  }
-}
+const add = asyncHandler(async (req: Request, res: Response) => {
+  const especialidad = await createEspecialidad(req.body);
 
-async function findOne(req: Request, res: Response) {
-  try {
-    const id = Number.parseInt(req.params.id);
-    const especialidad = await getEspecialidadById(id);
+  res.status(201).json({
+    message: "ok",
+    data: especialidad,
+  });
+});
 
-    res.status(200).json({
-      message: "found especialidad",
-      data: especialidad,
-    });
-  } catch (error: any) {
-    res.status(getStatusCode(error.message)).json({ message: error.message });
-  }
-}
+const update = asyncHandler(async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id);
+  const especialidad = await updateEspecialidad(id, req.body);
 
-async function add(req: Request, res: Response) {
-  try {
-    const especialidad = await createEspecialidad(req.body);
+  res.status(200).json({
+    message: "especialidad updated",
+    data: especialidad,
+  });
+});
 
-    res.status(201).json({
-      message: "ok",
-      data: especialidad,
-    });
-  } catch (error: any) {
-    res.status(getStatusCode(error.message)).json({ message: error.message });
-  }
-}
+const remove = asyncHandler(async (req: Request, res: Response) => {
+  const id = Number.parseInt(req.params.id);
+  await deleteEspecialidad(id);
 
-async function update(req: Request, res: Response) {
-  try {
-    const id = Number.parseInt(req.params.id);
-    const especialidad = await updateEspecialidad(id, req.body);
-
-    res.status(200).json({
-      message: "especialidad updated",
-      data: especialidad,
-    });
-  } catch (error: any) {
-    res.status(getStatusCode(error.message)).json({ message: error.message });
-  }
-}
-
-async function remove(req: Request, res: Response) {
-  try {
-    const id = Number.parseInt(req.params.id);
-    await deleteEspecialidad(id);
-
-    res.status(200).json({
-      message: "especialidad deleted",
-    });
-  } catch (error: any) {
-    res.status(getStatusCode(error.message)).json({ message: error.message });
-  }
-}
+  res.status(200).json({
+    message: "especialidad deleted",
+  });
+});
 
 export { add, remove, update, findOne, findAll };
