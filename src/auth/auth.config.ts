@@ -7,6 +7,14 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "https://turnos-frontend-tau.vercel.app",
 ];
 
+function isLocalOrigin(origin: string) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin.trim());
+}
+
+function hasCrossSiteFrontendOrigin() {
+  return getAllowedOrigins().some((origin) => !isLocalOrigin(origin));
+}
+
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();
 
@@ -50,7 +58,11 @@ function normalizeSameSite(value: string | undefined): "lax" | "strict" | "none"
     return normalizedValue;
   }
 
-  return process.env.NODE_ENV === "production" ? "none" : "lax";
+  if (process.env.NODE_ENV === "production" || hasCrossSiteFrontendOrigin()) {
+    return "none";
+  }
+
+  return "lax";
 }
 
 export function getJwtSecret() {
