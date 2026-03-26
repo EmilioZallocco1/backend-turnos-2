@@ -5,7 +5,7 @@ import {
   addObraSocial,
   updateObraSocial,
   removeObraSocial,
-} from "./obrasocial.service.js";
+} from "../servicios/obrasocial.service.js";
 import { buildPaginationResponse, getPagination } from "../utils/pagination.js";
 import { asyncHandler } from "../shared/errors/asyncHandler.js";
 

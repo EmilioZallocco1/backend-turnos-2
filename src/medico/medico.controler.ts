@@ -5,7 +5,7 @@ import {
   createMedico,
   updateMedico,
   deleteMedico,
-} from "./medico.service.js";
+} from "../servicios/medico.service.js";
 import { getPagination, buildPaginationResponse } from "../utils/pagination.js";
 import { asyncHandler } from "../shared/errors/asyncHandler.js";
 

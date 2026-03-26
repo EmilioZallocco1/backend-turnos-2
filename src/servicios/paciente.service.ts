@@ -1,5 +1,5 @@
 import { orm } from "../shared/db/orm.js";
-import { Paciente } from "./paciente.entity.js";
+import { Paciente } from "../paciente/paciente.entity.js";
 import { ObraSocial } from "../obraSocial/obrasocial.entity.js";
 import { Turno } from "../turno/turno.entity.js";
 import bcrypt from "bcrypt";

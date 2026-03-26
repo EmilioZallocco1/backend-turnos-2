@@ -1,5 +1,5 @@
 import { orm } from "../shared/db/orm.js";
-import { Turno } from "./turno.entity.js";
+import { Turno } from "../turno/turno.entity.js";
 import { Medico } from "../medico/medico.entity.js";
 import { Paciente } from "../paciente/paciente.entity.js";
 import {

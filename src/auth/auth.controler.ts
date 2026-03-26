@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../shared/errors/asyncHandler.js";
-import { loginPaciente } from "../paciente/paciente.service.js";
+import { loginPaciente } from "../servicios/paciente.service.js";
 import { clearSessionCookie, setSessionCookie } from "./auth.utils.js";
 
 const login = asyncHandler(async (req: Request, res: Response) => {

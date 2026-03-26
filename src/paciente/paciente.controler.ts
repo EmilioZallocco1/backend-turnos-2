@@ -8,7 +8,7 @@ import {
   updatePaciente,
   deletePaciente,
   getTurnosByPacienteId,
-} from "./paciente.service.js";
+} from "../servicios/paciente.service.js";
 import { getPagination, buildPaginationResponse } from "../utils/pagination.js";
 import { asyncHandler } from "../shared/errors/asyncHandler.js";
 import { UnauthorizedError } from "../shared/errors/appError.js";

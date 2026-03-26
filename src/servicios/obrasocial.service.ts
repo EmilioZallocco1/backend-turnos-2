@@ -1,5 +1,5 @@
 import { orm } from '../shared/db/orm.js'
-import { ObraSocial } from './obrasocial.entity.js'
+import { ObraSocial } from '../obraSocial/obrasocial.entity.js'
 
 const em = orm.em
 
