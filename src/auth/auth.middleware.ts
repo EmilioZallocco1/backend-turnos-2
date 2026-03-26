@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { UnauthorizedError } from "../shared/errors/appError.js";
-import { getAuthenticatedPacienteById } from "../paciente/paciente.service.js";
+import { getAuthenticatedPacienteById } from "../servicios/paciente.service.js";
 import { readSessionTokenFromRequest, verifySessionToken } from "./auth.utils.js";
 
 export async function authMiddleware(req: Request, _res: Response, next: NextFunction) {

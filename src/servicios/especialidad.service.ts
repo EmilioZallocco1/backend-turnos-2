@@ -1,5 +1,5 @@
 import { orm } from "../shared/db/orm.js";
-import { Especialidad } from "./especialidad.entity.js";
+import { Especialidad } from "../especialidad/especialidad.entity.js";
 
 const em = orm.em.fork();
 

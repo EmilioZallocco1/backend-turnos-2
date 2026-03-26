@@ -5,7 +5,7 @@ import {
   createEspecialidad,
   updateEspecialidad,
   deleteEspecialidad,
-} from "./especialidad.service.js";
+} from "../servicios/especialidad.service.js";
 import { asyncHandler } from "../shared/errors/asyncHandler.js";
 
 const findAll = asyncHandler(async (_req: Request, res: Response) => {

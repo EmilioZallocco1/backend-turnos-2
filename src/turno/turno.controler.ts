@@ -8,7 +8,7 @@ import {
   getTurnosByMedicoId,
   verifyOverlap,
   getHorariosDisponiblesByMedico,
-} from "./turno.service.js";
+} from "../servicios/turno.service.js";
 import { getPagination, buildPaginationResponse } from "../utils/pagination.js";
 import { asyncHandler } from "../shared/errors/asyncHandler.js";
 import { UnauthorizedError } from "../shared/errors/appError.js";
