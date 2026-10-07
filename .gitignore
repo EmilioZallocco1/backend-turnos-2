@@ -7,6 +7,9 @@ coverage
 # dependency directory
 node_modules
 
+# Claude Code local session/worktree data
+.claude/
+
 # OS metadata
 .DS_Store
 Thumbs.db
