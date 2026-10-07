@@ -3,6 +3,11 @@ import { Medico } from "../medico/medico.entity.js";
 import { Turno } from "../turno/turno.entity.js";
 import { Especialidad } from "../especialidad/especialidad.entity.js";
 import { ObraSocial } from "../obraSocial/obrasocial.entity.js";
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundAppError,
+} from "../shared/errors/appError.js";
 
 const em = orm.em.fork();
 
@@ -36,12 +41,12 @@ async function createMedico(data: any) {
     typeof especialidad === "object" ? especialidad?.id : especialidad;
 
   if (!especialidadId) {
-    throw new Error("Falta el ID de la especialidad");
+    throw new BadRequestError("Falta el ID de la especialidad");
   }
 
   const especialidadObj = await em.findOne(Especialidad, { id: especialidadId });
   if (!especialidadObj) {
-    throw new Error("La especialidad no existe");
+    throw new BadRequestError("La especialidad no existe");
   }
 
   let obraSocialObj = null;
@@ -54,14 +59,14 @@ async function createMedico(data: any) {
       obraSocialObj = await em.findOne(ObraSocial, { id: obraSocialId });
 
       if (!obraSocialObj) {
-        throw new Error("La obra social no existe");
+        throw new BadRequestError("La obra social no existe");
       }
     }
   }
 
   const medicoExistente = await em.findOne(Medico, { email });
   if (medicoExistente) {
-    throw new Error("Ya existe un médico con ese email");
+    throw new ConflictError("Ya existe un médico con ese email");
   }
 
   const datosMedico: any = {
@@ -86,7 +91,7 @@ async function updateMedico(id: number, data: any) {
   const medicoToUpdate = await em.findOne(Medico, { id });
 
   if (!medicoToUpdate) {
-    throw new Error("Médico no encontrado");
+    throw new NotFoundAppError("Médico no encontrado");
   }
 
   const updateData: any = {};
@@ -98,7 +103,7 @@ async function updateMedico(id: number, data: any) {
   if (data.email && data.email !== medicoToUpdate.email) {
     const medicoExistente = await em.findOne(Medico, { email: data.email });
     if (medicoExistente) {
-      throw new Error("Ya existe un médico con ese email");
+      throw new ConflictError("Ya existe un médico con ese email");
     }
   }
 
@@ -113,7 +118,7 @@ async function updateMedico(id: number, data: any) {
     });
 
     if (!especialidadObj) {
-      throw new Error("La especialidad no existe");
+      throw new BadRequestError("La especialidad no existe");
     }
 
     updateData.especialidad = especialidadObj;
@@ -128,7 +133,7 @@ async function updateMedico(id: number, data: any) {
     const obraSocialObj = await em.findOne(ObraSocial, { id: obraSocialId });
 
     if (!obraSocialObj) {
-      throw new Error("La obra social no existe");
+      throw new BadRequestError("La obra social no existe");
     }
 
     updateData.obraSocial = obraSocialObj;
@@ -144,7 +149,7 @@ async function deleteMedico(id: number) {
   const medico = await em.findOne(Medico, { id });
 
   if (!medico) {
-    throw new Error("Médico no encontrado");
+    throw new NotFoundAppError("Médico no encontrado");
   }
 
   const turnosPendientes = await em.count(Turno, {
@@ -153,7 +158,7 @@ async function deleteMedico(id: number) {
   });
 
   if (turnosPendientes > 0) {
-    throw new Error(
+    throw new ConflictError(
       `No se puede eliminar: tiene ${turnosPendientes} turno(s) pendiente(s).`
     );
   }

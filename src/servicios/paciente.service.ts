@@ -7,7 +7,12 @@ import { esEmailValido } from "../utils/validarEmail.js";
 import { esContraseniaValida } from "../utils/validarContrasenia.js";
 import { signSessionToken } from "../auth/auth.utils.js";
 import type { AuthenticatedUser } from "../auth/auth.types.js";
-import { UnauthorizedError } from "../shared/errors/appError.js";
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundAppError,
+  UnauthorizedError,
+} from "../shared/errors/appError.js";
 
 const em = orm.em.fork();
 
@@ -25,27 +30,27 @@ async function registerPaciente(data: any) {
   const { nombre, apellido, email, password, obraSocialId } = data;
 
   if (!nombre || !apellido || !email || !password || !obraSocialId) {
-    throw new Error("Nombre, apellido, email, contrasena y obra social son obligatorios.");
+    throw new BadRequestError("Nombre, apellido, email, contrasena y obra social son obligatorios.");
   }
 
   if (!esEmailValido(email)) {
-    throw new Error("El email no tiene un formato valido.");
+    throw new BadRequestError("El email no tiene un formato valido.");
   }
 
   if (!esContraseniaValida(password)) {
-    throw new Error(
+    throw new BadRequestError(
       "La contrasena no es valida. Debe tener al menos 8 caracteres e incluir letras y numeros.",
     );
   }
 
   const existingPaciente = await em.findOne(Paciente, { email });
   if (existingPaciente) {
-    throw new Error("El email ya esta en uso.");
+    throw new ConflictError("El email ya esta en uso.");
   }
 
   const obraSocial = await em.findOne(ObraSocial, { id: obraSocialId });
   if (!obraSocial) {
-    throw new Error("La obra social proporcionada no existe.");
+    throw new BadRequestError("La obra social proporcionada no existe.");
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -75,27 +80,27 @@ async function registerPacienteByAdmin(data: any) {
   const { nombre, apellido, email, password, obraSocialId, role } = data;
 
   if (!nombre || !apellido || !email || !password || !obraSocialId) {
-    throw new Error("Nombre, apellido, email, contrasena y obra social son obligatorios.");
+    throw new BadRequestError("Nombre, apellido, email, contrasena y obra social son obligatorios.");
   }
 
   if (!esEmailValido(email)) {
-    throw new Error("El email no tiene un formato valido.");
+    throw new BadRequestError("El email no tiene un formato valido.");
   }
 
   if (!esContraseniaValida(password)) {
-    throw new Error(
+    throw new BadRequestError(
       "La contrasena no es valida. Debe tener al menos 8 caracteres e incluir letras y numeros.",
     );
   }
 
   const existingPaciente = await em.findOne(Paciente, { email });
   if (existingPaciente) {
-    throw new Error("El email ya esta en uso.");
+    throw new ConflictError("El email ya esta en uso.");
   }
 
   const obraSocial = await em.findOne(ObraSocial, { id: obraSocialId });
   if (!obraSocial) {
-    throw new Error("La obra social proporcionada no existe.");
+    throw new BadRequestError("La obra social proporcionada no existe.");
   }
 
   const roleFinal = role === "admin" ? "admin" : "paciente";
@@ -127,17 +132,17 @@ async function loginPaciente(data: any) {
   const { email, password } = data;
 
   if (!email || !password) {
-    throw new Error("Email y contrasena son obligatorios");
+    throw new BadRequestError("Email y contrasena son obligatorios");
   }
 
   const usuario = await em.findOne(Paciente, { email }, { populate: ["obraSocial"] });
   if (!usuario) {
-    throw new Error("Credenciales invalidas");
+    throw new UnauthorizedError("Credenciales invalidas");
   }
 
   const isMatch = await bcrypt.compare(password, usuario.passwordHash);
   if (!isMatch) {
-    throw new Error("Credenciales invalidas");
+    throw new UnauthorizedError("Credenciales invalidas");
   }
 
   return {
@@ -174,14 +179,25 @@ async function updatePaciente(id: number, data: any) {
   const { nombre, apellido, email, telefono, obraSocial } = data;
   const updateData: any = { nombre, apellido, email, telefono, obraSocial };
 
+  if (email && email !== pacienteToUpdate.email) {
+    const existingPaciente = await em.findOne(Paciente, { email });
+    if (existingPaciente) {
+      throw new ConflictError("El email ya esta en uso.");
+    }
+  }
+
   if (
     updateData.obraSocial &&
     typeof updateData.obraSocial === "object" &&
     updateData.obraSocial.id
   ) {
-    updateData.obraSocial = await em.findOneOrFail(ObraSocial, {
+    const obraSocialObj = await em.findOne(ObraSocial, {
       id: updateData.obraSocial.id,
     });
+    if (!obraSocialObj) {
+      throw new BadRequestError("La obra social proporcionada no existe.");
+    }
+    updateData.obraSocial = obraSocialObj;
   }
 
   em.assign(pacienteToUpdate, updateData);
@@ -194,7 +210,7 @@ async function deletePaciente(id: number) {
   const paciente = await em.findOne(Paciente, { id });
 
   if (!paciente) {
-    throw new Error("Paciente no encontrado");
+    throw new NotFoundAppError("Paciente no encontrado");
   }
 
   await em.removeAndFlush(paciente);
@@ -217,7 +233,7 @@ async function getTurnosByPacienteId(
   );
 
   if (total === 0) {
-    throw new Error("No se encontraron turnos para este paciente");
+    throw new NotFoundAppError("No se encontraron turnos para este paciente");
   }
 
   return { turnos, total };

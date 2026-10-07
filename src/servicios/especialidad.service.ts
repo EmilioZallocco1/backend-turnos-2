@@ -1,5 +1,6 @@
 import { orm } from "../shared/db/orm.js";
 import { Especialidad } from "../especialidad/especialidad.entity.js";
+import { ConflictError, NotFoundAppError } from "../shared/errors/appError.js";
 
 const em = orm.em.fork();
 
@@ -16,7 +17,7 @@ async function createEspecialidad(data: any) {
 
   const existente = await em.findOne(Especialidad, { name });
   if (existente) {
-    throw new Error("Ya existe una especialidad con ese nombre");
+    throw new ConflictError("Ya existe una especialidad con ese nombre");
   }
 
   const especialidad = em.create(Especialidad, {
@@ -33,7 +34,7 @@ async function updateEspecialidad(id: number, data: any) {
   const especialidad = await em.findOne(Especialidad, { id });
 
   if (!especialidad) {
-    throw new Error("Especialidad no encontrada");
+    throw new NotFoundAppError("Especialidad no encontrada");
   }
 
   const updateData: any = {};
@@ -42,7 +43,7 @@ async function updateEspecialidad(id: number, data: any) {
     if (data.name !== especialidad.name) {
       const existente = await em.findOne(Especialidad, { name: data.name });
       if (existente) {
-        throw new Error("Ya existe una especialidad con ese nombre");
+        throw new ConflictError("Ya existe una especialidad con ese nombre");
       }
     }
     updateData.name = data.name;
@@ -62,7 +63,7 @@ async function deleteEspecialidad(id: number) {
   const especialidad = await em.findOne(Especialidad, { id });
 
   if (!especialidad) {
-    throw new Error("Especialidad no encontrada");
+    throw new NotFoundAppError("Especialidad no encontrada");
   }
 
   await em.removeAndFlush(especialidad);

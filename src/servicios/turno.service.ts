@@ -10,7 +10,12 @@ import {
   addMinutes,
 } from "../utils/turnos.helpers.js";
 import type { AuthenticatedUser } from "../auth/auth.types.js";
-import { ForbiddenError } from "../shared/errors/appError.js";
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundAppError,
+} from "../shared/errors/appError.js";
 
 const em = orm.em.fork();
 
@@ -56,21 +61,29 @@ async function createTurno(data: any, actor: AuthenticatedUser) {
   const DURACION_MIN = 30;
 
   if (!pacienteId) {
-    throw new Error("El pacienteId es obligatorio para administradores");
-  }
-
-  const medico = await em.findOne(Medico, { id: medicoId });
-  if (!medico) {
-    throw new Error("Medico no encontrado");
-  }
-
-  const paciente = await em.findOne(Paciente, { id: pacienteId });
-  if (!paciente) {
-    throw new Error("Paciente no encontrado");
+    throw new BadRequestError("El pacienteId es obligatorio para administradores");
   }
 
   const inicio = new Date(`${fecha}T${hora}`);
   const fin = new Date(inicio.getTime() + DURACION_MIN * 60 * 1000);
+
+  if (inicio.getTime() < Date.now()) {
+    throw new BadRequestError("No se pueden crear turnos con fecha/hora en el pasado");
+  }
+
+  const medico = await em.findOne(Medico, { id: medicoId });
+  if (!medico) {
+    throw new BadRequestError("Medico no encontrado");
+  }
+
+  if (!medico.activo) {
+    throw new BadRequestError("El medico seleccionado no esta activo y no puede recibir turnos");
+  }
+
+  const paciente = await em.findOne(Paciente, { id: pacienteId });
+  if (!paciente) {
+    throw new BadRequestError("Paciente no encontrado");
+  }
 
   const turnosExistentes = await em.find(Turno, { medico: medicoId });
 
@@ -81,7 +94,7 @@ async function createTurno(data: any, actor: AuthenticatedUser) {
   });
 
   if (haySuperposicion) {
-    throw new Error("El turno se superpone con otro del mismo medico");
+    throw new ConflictError("El turno se superpone con otro del mismo medico");
   }
 
   const turno = em.create(Turno, {
@@ -106,7 +119,7 @@ async function updateTurno(id: number, data: any, actor: AuthenticatedUser) {
   );
 
   if (!turnoToUpdate) {
-    throw new Error("Turno no encontrado");
+    throw new NotFoundAppError("Turno no encontrado");
   }
 
   assertCanManageTurno(actor, turnoToUpdate as Turno & { paciente: Paciente });
@@ -133,7 +146,7 @@ async function updateTurno(id: number, data: any, actor: AuthenticatedUser) {
   if (actor.role === "admin" && data.medicoId !== undefined) {
     const medico = await em.findOne(Medico, { id: data.medicoId });
     if (!medico) {
-      throw new Error("Medico no encontrado");
+      throw new BadRequestError("Medico no encontrado");
     }
     updateData.medico = medico;
   }
@@ -141,7 +154,7 @@ async function updateTurno(id: number, data: any, actor: AuthenticatedUser) {
   if (actor.role === "admin" && data.pacienteId !== undefined) {
     const paciente = await em.findOne(Paciente, { id: data.pacienteId });
     if (!paciente) {
-      throw new Error("Paciente no encontrado");
+      throw new BadRequestError("Paciente no encontrado");
     }
     updateData.paciente = paciente;
   }
@@ -160,7 +173,7 @@ async function deleteTurno(id: number, actor: AuthenticatedUser) {
   );
 
   if (!turno) {
-    throw new Error("Turno no encontrado");
+    throw new NotFoundAppError("Turno no encontrado");
   }
 
   assertCanManageTurno(actor, turno as Turno & { paciente: Paciente });
@@ -175,7 +188,7 @@ async function getTurnosByMedicoId(medicoId: number) {
   );
 
   if (!turnos || turnos.length === 0) {
-    throw new Error("No se encontraron turnos para este medico");
+    throw new NotFoundAppError("No se encontraron turnos para este medico");
   }
 
   return turnos;
@@ -190,14 +203,14 @@ async function verifyOverlap(
   const dur = Number(duracionMin ?? 30);
 
   if (!inicio && !fin) {
-    throw new Error("Parametros invalidos: enviar inicio y fin o inicio+duracionMin");
+    throw new BadRequestError("Parametros invalidos: enviar inicio y fin o inicio+duracionMin");
   }
 
   const ini = inicio ? new Date(inicio) : undefined;
   const fi = fin ? new Date(fin) : ini ? addMinutes(ini, dur) : undefined;
 
   if (!ini || !fi) {
-    throw new Error("Fechas invalidas");
+    throw new BadRequestError("Fechas invalidas");
   }
 
   const dayStart = startOfDayUTC(ini);
@@ -222,7 +235,7 @@ async function getHorariosDisponiblesByMedico(medicoId: number, fechaStr: string
   const medico = await em.findOne(Medico, { id: medicoId });
 
   if (!medico) {
-    throw new Error("Medico no encontrado");
+    throw new NotFoundAppError("Medico no encontrado");
   }
 
   const fechaBase = new Date(`${fechaStr}T00:00:00.000Z`);
