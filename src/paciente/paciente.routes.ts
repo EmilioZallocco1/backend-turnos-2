@@ -22,12 +22,19 @@ import {
   updatePacienteValidator,
 } from "./paciente.validator.js";
 import { validateFields } from "../middlewares/validateFields.js";
+import { loginRateLimiter, registerRateLimiter } from "../shared/middlewares/rateLimiters.js";
 
 export const pacienteRouter = Router();
 
-pacienteRouter.post("/login", loginPacienteValidator, validateFields, login);
+pacienteRouter.post("/login", loginRateLimiter, loginPacienteValidator, validateFields, login);
 pacienteRouter.post("/logout", logout);
-pacienteRouter.post("/register", registerPacienteValidator, validateFields, register);
+pacienteRouter.post(
+  "/register",
+  registerRateLimiter,
+  registerPacienteValidator,
+  validateFields,
+  register,
+);
 
 pacienteRouter.use(authMiddleware);
 
@@ -39,6 +46,7 @@ pacienteRouter.get("/me/turnos", findTurnosByCurrentPaciente);
 pacienteRouter.post(
   "/admin/create",
   requireAdmin,
+  registerRateLimiter,
   registerByAdminValidator,
   validateFields,
   registerByAdmin,

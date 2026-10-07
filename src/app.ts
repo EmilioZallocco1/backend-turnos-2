@@ -2,6 +2,7 @@ import "reflect-metadata";
 import "./shared/config/loadEnv.js";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { orm, syncSchema } from "./shared/db/orm.js";
 import { RequestContext } from "@mikro-orm/core";
 import { authRouter } from "./auth/auth.routes.js";
@@ -17,6 +18,10 @@ import {
 } from "./shared/errors/errorHandler.js";
 
 const app = express();
+
+app.set("trust proxy", 1);
+
+app.use(helmet());
 
 app.use(express.json());
 

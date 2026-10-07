@@ -7,6 +7,7 @@ import {
   ManyToOne,
   Rel,
   Cascade,
+  Unique,
 } from "@mikro-orm/core";
 import { Turno } from "../turno/turno.entity.js";
 import { ObraSocial } from "../obraSocial/obrasocial.entity.js";
@@ -23,6 +24,7 @@ export class Paciente {
   apellido!: string;
 
   @Property()
+  @Unique()
   email!: string;
 
   @Property({ hidden: true })
