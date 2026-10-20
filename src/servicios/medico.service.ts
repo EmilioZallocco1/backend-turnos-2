@@ -3,38 +3,34 @@ import { Medico } from "../medico/medico.entity.js";
 import { Turno } from "../turno/turno.entity.js";
 import { Especialidad } from "../especialidad/especialidad.entity.js";
 import { ObraSocial } from "../obraSocial/obrasocial.entity.js";
-import {
-  BadRequestError,
-  ConflictError,
-  NotFoundAppError,
-} from "../shared/errors/appError.js";
+import { BadRequestError, ConflictError } from "../shared/errors/appError.js";
+import { assertUnique, findOneOrNotFound, findPaginated } from "../shared/crud/crudHelpers.js";
 
-const em = orm.em.fork();
+const NOT_FOUND_MESSAGE = "Médico no encontrado";
 
 async function getAllMedicos(limit = 10, offset = 0) {
-  const [medicos, total] = await em.findAndCount(
+  const em = orm.em;
+  const { items: medicos, total } = await findPaginated(
+    em,
     Medico,
     { activo: true },
-    {
-      populate: ["especialidad", "obraSocial"],
-      limit,
-      offset,
-      orderBy: { id: "ASC" },
-    }
+    limit,
+    offset,
+    { populate: ["especialidad", "obraSocial"] },
   );
 
   return { medicos, total };
 }
 
 async function getMedicoById(id: number) {
-  return await em.findOneOrFail(
-    Medico,
-    { id, activo: true },
-    { populate: ["especialidad", "obraSocial"] }
-  );
+  const em = orm.em;
+  return await findOneOrNotFound(em, Medico, { id, activo: true }, NOT_FOUND_MESSAGE, {
+    populate: ["especialidad", "obraSocial"],
+  });
 }
 
 async function createMedico(data: any) {
+  const em = orm.em;
   const { nombre, email, telefono, especialidad, obraSocial } = data;
 
   const especialidadId =
@@ -64,10 +60,7 @@ async function createMedico(data: any) {
     }
   }
 
-  const medicoExistente = await em.findOne(Medico, { email });
-  if (medicoExistente) {
-    throw new ConflictError("Ya existe un médico con ese email");
-  }
+  await assertUnique(em, Medico, { email }, "Ya existe un médico con ese email");
 
   const datosMedico: any = {
     nombre,
@@ -88,11 +81,8 @@ async function createMedico(data: any) {
 }
 
 async function updateMedico(id: number, data: any) {
-  const medicoToUpdate = await em.findOne(Medico, { id });
-
-  if (!medicoToUpdate) {
-    throw new NotFoundAppError("Médico no encontrado");
-  }
+  const em = orm.em;
+  const medicoToUpdate = await findOneOrNotFound(em, Medico, { id }, NOT_FOUND_MESSAGE);
 
   const updateData: any = {};
 
@@ -101,10 +91,7 @@ async function updateMedico(id: number, data: any) {
   if (data.telefono !== undefined) updateData.telefono = data.telefono;
 
   if (data.email && data.email !== medicoToUpdate.email) {
-    const medicoExistente = await em.findOne(Medico, { email: data.email });
-    if (medicoExistente) {
-      throw new ConflictError("Ya existe un médico con ese email");
-    }
+    await assertUnique(em, Medico, { email: data.email }, "Ya existe un médico con ese email");
   }
 
   if (data.especialidad) {
@@ -146,11 +133,8 @@ async function updateMedico(id: number, data: any) {
 }
 
 async function deleteMedico(id: number) {
-  const medico = await em.findOne(Medico, { id });
-
-  if (!medico) {
-    throw new NotFoundAppError("Médico no encontrado");
-  }
+  const em = orm.em;
+  const medico = await findOneOrNotFound(em, Medico, { id }, NOT_FOUND_MESSAGE);
 
   const turnosPendientes = await em.count(Turno, {
     medico: medico,

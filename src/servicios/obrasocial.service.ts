@@ -1,45 +1,41 @@
 import { orm } from '../shared/db/orm.js'
 import { ObraSocial } from '../obraSocial/obrasocial.entity.js'
+import { findOneOrNotFound, findPaginated } from '../shared/crud/crudHelpers.js'
 
-const em = orm.em
+const NOT_FOUND_MESSAGE = 'Obra social no encontrada'
 
 async function findAllObrasSociales(page: number, limit: number, offset: number) {
-  const [obrasSociales, total] = await em.findAndCount(
-    ObraSocial,
-    {},
-    {
-      limit,
-      offset,
-    }
-  );
+  const em = orm.em
+  const { items: obrasSociales, total } = await findPaginated(em, ObraSocial, {}, limit, offset)
 
   return { obrasSociales, total };
 }
 
 async function findOneObraSocial(id: number) {
-  const obraSocial = await em.findOneOrFail(
-    ObraSocial,
-    { id },
-    { populate: ['pacientes', 'medicos'] }
-  )
-  return obraSocial
+  const em = orm.em
+  return await findOneOrNotFound(em, ObraSocial, { id }, NOT_FOUND_MESSAGE, {
+    populate: ['pacientes', 'medicos'],
+  })
 }
 
 async function addObraSocial(data: any) {
+  const em = orm.em
   const obraSocial = em.create(ObraSocial, data)
   await em.flush()
   return obraSocial
 }
 
 async function updateObraSocial(id: number, data: any) {
-  const obraSocialToUpdate = await em.findOneOrFail(ObraSocial, { id })
+  const em = orm.em
+  const obraSocialToUpdate = await findOneOrNotFound(em, ObraSocial, { id }, NOT_FOUND_MESSAGE)
   em.assign(obraSocialToUpdate, data)
   await em.flush()
   return obraSocialToUpdate
 }
 
 async function removeObraSocial(id: number) {
-  const obraSocial = em.getReference(ObraSocial, id)
+  const em = orm.em
+  const obraSocial = await findOneOrNotFound(em, ObraSocial, { id }, NOT_FOUND_MESSAGE)
   await em.removeAndFlush(obraSocial)
 }
 

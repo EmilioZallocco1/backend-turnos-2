@@ -17,8 +17,6 @@ import {
   NotFoundAppError,
 } from "../shared/errors/appError.js";
 
-const em = orm.em.fork();
-
 function assertCanManageTurno(actor: AuthenticatedUser, turno: Turno & { paciente: Paciente }) {
   if (actor.role === "admin") {
     return;
@@ -30,6 +28,7 @@ function assertCanManageTurno(actor: AuthenticatedUser, turno: Turno & { pacient
 }
 
 async function getAllTurnos(limit = 5, offset = 0) {
+  const em = orm.em;
   const [turnos, total] = await em.findAndCount(
     Turno,
     {},
@@ -45,6 +44,7 @@ async function getAllTurnos(limit = 5, offset = 0) {
 }
 
 async function getTurnoById(id: number, actor: AuthenticatedUser) {
+  const em = orm.em;
   const turno = await em.findOneOrFail(
     Turno,
     { id },
@@ -56,6 +56,7 @@ async function getTurnoById(id: number, actor: AuthenticatedUser) {
 }
 
 async function createTurno(data: any, actor: AuthenticatedUser) {
+  const em = orm.em;
   const { fecha, hora, estado, descripcion, medicoId } = data;
   const pacienteId = actor.role === "admin" ? data.pacienteId : actor.id;
   const DURACION_MIN = 30;
@@ -112,6 +113,7 @@ async function createTurno(data: any, actor: AuthenticatedUser) {
 }
 
 async function updateTurno(id: number, data: any, actor: AuthenticatedUser) {
+  const em = orm.em;
   const turnoToUpdate = await em.findOne(
     Turno,
     { id },
@@ -166,6 +168,7 @@ async function updateTurno(id: number, data: any, actor: AuthenticatedUser) {
 }
 
 async function deleteTurno(id: number, actor: AuthenticatedUser) {
+  const em = orm.em;
   const turno = await em.findOne(
     Turno,
     { id },
@@ -181,6 +184,7 @@ async function deleteTurno(id: number, actor: AuthenticatedUser) {
 }
 
 async function getTurnosByMedicoId(medicoId: number) {
+  const em = orm.em;
   const turnos = await em.find(
     Turno,
     { medico: medicoId },
@@ -213,6 +217,7 @@ async function verifyOverlap(
     throw new BadRequestError("Fechas invalidas");
   }
 
+  const em = orm.em;
   const dayStart = startOfDayUTC(ini);
   const dayEnd = endOfDayUTC(ini);
 
@@ -232,6 +237,7 @@ async function verifyOverlap(
 }
 
 async function getHorariosDisponiblesByMedico(medicoId: number, fechaStr: string) {
+  const em = orm.em;
   const medico = await em.findOne(Medico, { id: medicoId });
 
   if (!medico) {

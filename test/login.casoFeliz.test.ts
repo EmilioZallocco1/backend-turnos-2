@@ -6,14 +6,12 @@ let emMock: any;
 
 jest.mock("../src/shared/db/orm.js", () => {
   emMock = {
-    findOne: jest.fn(), // ← necesario
+    findOne: jest.fn(),
   };
 
   return {
     orm: {
-      em: {
-        fork: () => emMock,
-      },
+      em: emMock, // el servicio usa orm.em directamente (resuelto por request)
     },
   };
 });
@@ -21,6 +19,14 @@ jest.mock("../src/shared/db/orm.js", () => {
 // --- MOCK DE BCRYPT ---
 jest.mock("bcrypt", () => ({
   compare: jest.fn(),
+}));
+
+// --- MOCK DE AUTH UTILS (evita que signSessionToken necesite JWT_SECRET) ---
+jest.mock("../src/auth/auth.utils.js", () => ({
+  signSessionToken: jest.fn().mockReturnValue("fake-token"),
+  setSessionCookie: jest.fn(),
+  clearSessionCookie: jest.fn(),
+  verifySessionToken: jest.fn(),
 }));
 
 import { login } from "../src/paciente/paciente.controler.js";
@@ -41,12 +47,11 @@ describe("login - caso feliz", () => {
       email: "user@test.com",
       passwordHash: "hashedPassword",
       nombre: "Juan",
+      apellido: "Pérez",
+      role: "paciente",
     };
 
-    // 1️⃣ em.findOne devuelve un usuario
     emMock.findOne.mockResolvedValueOnce(usuarioFake);
-
-    // 2️⃣ compare devuelve true (contraseña válida)
     compareMock.mockResolvedValueOnce(true);
 
     const req = {
@@ -57,24 +62,27 @@ describe("login - caso feliz", () => {
     } as unknown as Request;
 
     const res = crearMockResponse();
+    const next = jest.fn();
 
     // Act
-    await login(req, res);
+    await login(req, res, next);
 
     // Assert
+    expect(next).not.toHaveBeenCalled();
     expect(emMock.findOne).toHaveBeenCalledWith(Paciente, {
       email: "user@test.com",
-    });
-
-    expect(compareMock).toHaveBeenCalledWith(
-      "correcta123",
-      "hashedPassword"
-    );
-
+    }, { populate: ["obraSocial"] });
+    expect(compareMock).toHaveBeenCalledWith("correcta123", "hashedPassword");
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
       message: "Login exitoso",
-      data: usuarioFake,
+      data: {
+        id: 1,
+        nombre: "Juan",
+        apellido: "Pérez",
+        email: "user@test.com",
+        role: "paciente",
+      },
     });
   });
 });

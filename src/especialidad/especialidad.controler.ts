@@ -6,11 +6,17 @@ import {
   updateEspecialidad,
   deleteEspecialidad,
 } from "../servicios/especialidad.service.js";
+import { getPagination, buildPaginationResponse } from "../utils/pagination.js";
 import { asyncHandler } from "../shared/errors/asyncHandler.js";
 
-const findAll = asyncHandler(async (_req: Request, res: Response) => {
-  const especialidades = await getAllEspecialidades();
-  res.status(200).json({ message: "ok", data: especialidades });
+const findAll = asyncHandler(async (req: Request, res: Response) => {
+  const { page, limit, offset } = getPagination(req.query);
+  const { especialidades, total } = await getAllEspecialidades(limit, offset);
+
+  res.status(200).json({
+    message: "ok",
+    ...buildPaginationResponse(especialidades, total, page, limit),
+  });
 });
 
 const findOne = asyncHandler(async (req: Request, res: Response) => {

@@ -1,24 +1,26 @@
 import { orm } from "../shared/db/orm.js";
 import { Especialidad } from "../especialidad/especialidad.entity.js";
-import { ConflictError, NotFoundAppError } from "../shared/errors/appError.js";
+import { assertUnique, findOneOrNotFound, findPaginated } from "../shared/crud/crudHelpers.js";
 
-const em = orm.em.fork();
+const NOT_FOUND_MESSAGE = "Especialidad no encontrada";
 
-async function getAllEspecialidades() {
-  return await em.find(Especialidad, {});
+async function getAllEspecialidades(limit = 10, offset = 0) {
+  const em = orm.em;
+  const { items: especialidades, total } = await findPaginated(em, Especialidad, {}, limit, offset);
+
+  return { especialidades, total };
 }
 
 async function getEspecialidadById(id: number) {
-  return await em.findOneOrFail(Especialidad, { id });
+  const em = orm.em;
+  return await findOneOrNotFound(em, Especialidad, { id }, NOT_FOUND_MESSAGE);
 }
 
 async function createEspecialidad(data: any) {
+  const em = orm.em;
   const { name, description } = data;
 
-  const existente = await em.findOne(Especialidad, { name });
-  if (existente) {
-    throw new ConflictError("Ya existe una especialidad con ese nombre");
-  }
+  await assertUnique(em, Especialidad, { name }, "Ya existe una especialidad con ese nombre");
 
   const especialidad = em.create(Especialidad, {
     name,
@@ -31,20 +33,14 @@ async function createEspecialidad(data: any) {
 }
 
 async function updateEspecialidad(id: number, data: any) {
-  const especialidad = await em.findOne(Especialidad, { id });
-
-  if (!especialidad) {
-    throw new NotFoundAppError("Especialidad no encontrada");
-  }
+  const em = orm.em;
+  const especialidad = await findOneOrNotFound(em, Especialidad, { id }, NOT_FOUND_MESSAGE);
 
   const updateData: any = {};
 
   if (data.name !== undefined) {
     if (data.name !== especialidad.name) {
-      const existente = await em.findOne(Especialidad, { name: data.name });
-      if (existente) {
-        throw new ConflictError("Ya existe una especialidad con ese nombre");
-      }
+      await assertUnique(em, Especialidad, { name: data.name }, "Ya existe una especialidad con ese nombre");
     }
     updateData.name = data.name;
   }
@@ -60,11 +56,8 @@ async function updateEspecialidad(id: number, data: any) {
 }
 
 async function deleteEspecialidad(id: number) {
-  const especialidad = await em.findOne(Especialidad, { id });
-
-  if (!especialidad) {
-    throw new NotFoundAppError("Especialidad no encontrada");
-  }
+  const em = orm.em;
+  const especialidad = await findOneOrNotFound(em, Especialidad, { id }, NOT_FOUND_MESSAGE);
 
   await em.removeAndFlush(especialidad);
 }

@@ -1,8 +1,9 @@
-import { Entity, PrimaryKey, Property, ManyToOne, Rel } from '@mikro-orm/core';
+import { Entity, PrimaryKey, Property, ManyToOne, Rel, Index } from '@mikro-orm/core';
 import { Medico } from '../medico/medico.entity.js';
 import { Paciente } from '../paciente/paciente.entity.js';
 
 @Entity()
+@Index({ properties: ['medico', 'fecha'] })
 export class Turno {
   @PrimaryKey()
   id!: number;
