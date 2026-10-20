@@ -6,8 +6,11 @@ type AsyncHandler = (
   next: NextFunction,
 ) => void | Promise<void>;
 
-export function asyncHandler(handler: AsyncHandler): RequestHandler {
-  return (req, res, next) => {
-    Promise.resolve(handler(req, res, next)).catch(next);
+// MANEJO DE ERRORES DE MANERA CENTRAL - PARA NO REPETIR TRY CATCH EN CADA CONTROLADOR,
+// SE ENVUELVE LA LOGICA DE CADA CONTROLADOR EN ESTA FUNCION QUE SE ENCARGA
+// DE CAPTURAR ERRORES Y PASARLOS AL MIDDLEWARE DE ERRORES
+export function asyncHandler(fn: AsyncHandler): RequestHandler {
+  return (req: Request, res: Response, next: NextFunction) => {
+    return Promise.resolve(fn(req, res, next)).catch(next) as unknown as void;
   };
-}
+} 

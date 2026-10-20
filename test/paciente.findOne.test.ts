@@ -11,18 +11,22 @@ jest.mock("../src/shared/db/orm.js", () => {
 
   return {
     orm: {
-      em: {
-        fork: () => emMock, // esto es lo que usa tu controller
-      },
+      em: emMock, // el servicio usa orm.em directamente (resuelto por request)
     },
   };
 });
 
-// importa findOne DESPUÉS del mock
-import { findOne } from "../src/paciente/paciente.controler.js";
+// --- Mock de bcrypt (módulo nativo, no disponible en sandbox de tests) ---
+jest.mock("bcrypt", () => ({
+  compare: jest.fn(),
+  hash: jest.fn(),
+}));
+
+// importa findById DESPUÉS del mock
+import { findById } from "../src/paciente/paciente.controler.js";
 import { Paciente } from "../src/paciente/paciente.entity.js";
 
-describe("findOne", () => {
+describe("findById", () => {
   test("devuelve 200 y el paciente cuando existe", async () => {
     // Arrange
     const pacienteFake = { id: 10, nombre: "María" };
@@ -35,9 +39,10 @@ describe("findOne", () => {
     const json = jest.fn();
     const status = jest.fn(() => ({ json }));
     const res = { status, json } as unknown as Response;
+    const next = jest.fn();
 
     // Act
-    await findOne(req, res);
+    await findById(req, res, next);
 
     // Assert
     expect(emMock.findOneOrFail).toHaveBeenCalledWith(
@@ -49,8 +54,9 @@ describe("findOne", () => {
     expect(json).toHaveBeenCalledWith({ message: "ok", data: pacienteFake });
   });
 
-  test("devuelve 500 cuando findOneOrFail tira error", async () => {
-    emMock.findOneOrFail.mockRejectedValue(new Error("No encontrado"));
+  test("llama a next con el error cuando findOneOrFail falla", async () => {
+    const error = new Error("No encontrado");
+    emMock.findOneOrFail.mockRejectedValue(error);
 
     const req = {
       params: { id: "999" },
@@ -59,10 +65,11 @@ describe("findOne", () => {
     const json = jest.fn();
     const status = jest.fn(() => ({ json }));
     const res = { status, json } as unknown as Response;
+    const next = jest.fn();
 
-    await findOne(req, res);
+    await findById(req, res, next);
 
-    expect(status).toHaveBeenCalledWith(500);
-    expect(json).toHaveBeenCalledWith({ message: "No encontrado" });
+    expect(next).toHaveBeenCalledWith(error);
+    expect(status).not.toHaveBeenCalled();
   });
 });

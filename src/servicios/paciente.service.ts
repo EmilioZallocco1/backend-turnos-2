@@ -14,8 +14,6 @@ import {
   UnauthorizedError,
 } from "../shared/errors/appError.js";
 
-const em = orm.em.fork();
-
 function toAuthenticatedUser(paciente: Paciente): AuthenticatedUser {
   return {
     id: paciente.id,
@@ -27,6 +25,7 @@ function toAuthenticatedUser(paciente: Paciente): AuthenticatedUser {
 }
 
 async function registerPaciente(data: any) {
+  const em = orm.em;
   const { nombre, apellido, email, password, obraSocialId } = data;
 
   if (!nombre || !apellido || !email || !password || !obraSocialId) {
@@ -77,6 +76,7 @@ async function registerPaciente(data: any) {
 }
 
 async function registerPacienteByAdmin(data: any) {
+  const em = orm.em;
   const { nombre, apellido, email, password, obraSocialId, role } = data;
 
   if (!nombre || !apellido || !email || !password || !obraSocialId) {
@@ -129,6 +129,7 @@ async function registerPacienteByAdmin(data: any) {
 }
 
 async function loginPaciente(data: any) {
+  const em = orm.em;
   const { email, password } = data;
 
   if (!email || !password) {
@@ -152,6 +153,7 @@ async function loginPaciente(data: any) {
 }
 
 async function getAuthenticatedPacienteById(id: number) {
+  const em = orm.em;
   const paciente = await em.findOne(Paciente, { id });
 
   if (!paciente) {
@@ -161,11 +163,24 @@ async function getAuthenticatedPacienteById(id: number) {
   return toAuthenticatedUser(paciente);
 }
 
-async function getAllPacientes() {
-  return await em.find(Paciente, {}, { populate: ["obraSocial", "turnos"] });
+async function getAllPacientes(limit = 10, offset = 0) {
+  const em = orm.em;
+  const [pacientes, total] = await em.findAndCount(
+    Paciente,
+    {},
+    {
+      populate: ["obraSocial", "turnos"],
+      limit,
+      offset,
+      orderBy: { id: "ASC" },
+    },
+  );
+
+  return { pacientes, total };
 }
 
 async function getPacienteById(id: number) {
+  const em = orm.em;
   return await em.findOneOrFail(
     Paciente,
     { id },
@@ -174,6 +189,7 @@ async function getPacienteById(id: number) {
 }
 
 async function updatePaciente(id: number, data: any) {
+  const em = orm.em;
   const pacienteToUpdate = await em.findOneOrFail(Paciente, { id });
 
   const { nombre, apellido, email, telefono, obraSocial } = data;
@@ -207,6 +223,7 @@ async function updatePaciente(id: number, data: any) {
 }
 
 async function deletePaciente(id: number) {
+  const em = orm.em;
   const paciente = await em.findOne(Paciente, { id });
 
   if (!paciente) {
@@ -221,6 +238,7 @@ async function getTurnosByPacienteId(
   limit: number,
   offset: number,
 ) {
+  const em = orm.em;
   const [turnos, total] = await em.findAndCount(
     Turno,
     { paciente: pacienteId },

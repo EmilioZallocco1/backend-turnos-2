@@ -55,9 +55,14 @@ const logout = asyncHandler(async (_req: Request, res: Response) => {
   res.status(200).json({ message: "Logout exitoso" });
 });
 
-const findAll = asyncHandler(async (_req: Request, res: Response) => {
-  const pacientes = await getAllPacientes();
-  res.status(200).json({ message: "ok", data: pacientes });
+const findAll = asyncHandler(async (req: Request, res: Response) => {
+  const { page, limit, offset } = getPagination(req.query);
+  const { pacientes, total } = await getAllPacientes(limit, offset);
+
+  res.status(200).json({
+    message: "ok",
+    ...buildPaginationResponse(pacientes, total, page, limit),
+  });
 });
 
 const findOwn = asyncHandler(async (req: Request, res: Response) => {

@@ -1,4 +1,4 @@
-import {Entity,PrimaryKey,Property,OneToMany,Collection,ManyToOne, Rel} from '@mikro-orm/core';
+import {Entity,PrimaryKey,Property,OneToMany,Collection,ManyToOne, Rel, Unique} from '@mikro-orm/core';
 import { Especialidad } from '../especialidad/especialidad.entity.js';
 import { Turno } from '../turno/turno.entity.js';
 import { ObraSocial } from '../obraSocial/obrasocial.entity.js';
@@ -16,6 +16,7 @@ export class Medico {
   especialidad!: Rel<Especialidad>
 
   @Property()
+  @Unique()
   email!: string;
 
   @Property()
